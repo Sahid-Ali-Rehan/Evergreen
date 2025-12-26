@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Helmet } from "react-helmet-async";
 import Navbar from "../Navigations/Navbar";
 import Footer from "../Footer/Footer";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,12 +10,39 @@ import RelatedProduct from "../RelatedProduct/RelatedProduct";
 import ReactStars from 'react-rating-stars-component';
 import ReactPlayer from 'react-player'; 
 import Loading from '../Loading/Loading';
-import { FaStar, FaStarHalfAlt, FaRegStar, FaWhatsapp, FaShoppingCart, FaShippingFast, FaExchangeAlt, FaLock, FaExpand, FaHeart, FaShare, FaMinus, FaPlus } from 'react-icons/fa';
-import { TbZoomInArea } from 'react-icons/tb';
+import { 
+  FaStar, 
+  FaStarHalfAlt, 
+  FaRegStar, 
+  FaWhatsapp, 
+  FaShoppingCart, 
+  FaShippingFast, 
+  FaExchangeAlt, 
+  FaLock, 
+  FaExpand, 
+  FaHeart, 
+  FaShare, 
+  FaMinus, 
+  FaPlus,
+  FaMobileAlt,
+  FaCamera,
+  FaBatteryFull,
+  FaMemory,
+  FaSimCard,
+  FaWeight,
+  FaCheck,
+  FaBolt,
+  FaTag,
+  FaClock,
+  FaFire,
+  FaPercent
+} from 'react-icons/fa';
 
 const SingleProductList = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
+  const [campaignData, setCampaignData] = useState(null);
   const [mainImage, setMainImage] = useState("");
   const [activeTab, setActiveTab] = useState("description");
   const [quantity, setQuantity] = useState(1);
@@ -27,11 +55,14 @@ const SingleProductList = () => {
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  
   const [showZoom, setShowZoom] = useState(false);
-  const topRef = useRef(null);
+  const [lensPosition, setLensPosition] = useState({ x: 0, y: 0 });
+  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
 
-  // Scroll to top on mount
+  const topRef = useRef(null);
+  const containerRef = useRef(null);
+
   useEffect(() => {
     window.scrollTo(0, 0);
     if (topRef.current) {
@@ -39,23 +70,122 @@ const SingleProductList = () => {
     }
   }, [id]);
 
-  // Fetch product data
+  // Function to check if product is in campaign
+  const checkProductInCampaign = async (productId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/campaigns/check-product/${productId}`);
+      if (!response.ok) throw new Error('Failed to check campaign');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error checking campaign:', error);
+      return null;
+    }
+  };
+
+  // Function to calculate price with campaign discount
+  // Function to calculate price with campaign discount - FIXED
+const calculateCampaignPrice = (basePrice, productDiscount, campaignDiscount) => {
+  // If no discount at all
+  if (productDiscount <= 0 && campaignDiscount <= 0) {
+    return {
+      finalPrice: basePrice,
+      productDiscountPrice: basePrice,
+      campaignDiscountAmount: 0,
+      totalDiscountAmount: 0
+    };
+  }
+  
+  // First apply product discount
+  let priceAfterProductDiscount = basePrice;
+  if (productDiscount > 0) {
+    const productDiscountAmount = (basePrice * productDiscount) / 100;
+    priceAfterProductDiscount = basePrice - productDiscountAmount;
+  }
+  
+  // Then apply campaign discount on the product-discounted price
+  let finalPrice = priceAfterProductDiscount;
+  let campaignDiscountAmount = 0;
+  
+  if (campaignDiscount > 0) {
+    campaignDiscountAmount = (priceAfterProductDiscount * campaignDiscount) / 100;
+    finalPrice = priceAfterProductDiscount - campaignDiscountAmount;
+  }
+  
+  const totalDiscountAmount = (basePrice - finalPrice);
+  
+  return {
+    finalPrice: Math.round(finalPrice),
+    productDiscountPrice: Math.round(priceAfterProductDiscount),
+    campaignDiscountAmount: Math.round(campaignDiscountAmount),
+    totalDiscountAmount: Math.round(totalDiscountAmount)
+  };
+};
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`https://ruhana-adv.onrender.com/api/products/single/${id}`);
+        const apiUrl = `http://localhost:5000/api/products/single/${id}`;
+
+        const response = await fetch(apiUrl);
         if (!response.ok) throw new Error("Failed to fetch product");
-        const data = await response.json();
-        setProduct(data);
-        setMainImage(data.images[0]);
+        const productData = await response.json();
         
-        // Auto-select if only one option available
-        if (data.availableSizes.length === 1) {
-          setSelectedSize(data.availableSizes[0].size);
+        // Check if product is in any active campaign
+        const campaignInfo = await checkProductInCampaign(productData._id);
+        
+        if (campaignInfo && campaignInfo.isInCampaign) {
+          // Product is in campaign, calculate the price with campaign discount
+          const priceCalculation = calculateCampaignPrice(
+            productData.price,
+            productData.discount || 0,
+            campaignInfo.campaignDiscount
+          );
+          
+          // Merge campaign data with product data
+          setProduct({
+            ...productData,
+            originalPrice: productData.price,
+            productDiscount: productData.discount || 0,
+            campaignDiscount: campaignInfo.campaignDiscount,
+            campaignFinalPrice: priceCalculation.finalPrice,
+            campaignProductDiscountPrice: priceCalculation.productDiscountPrice,
+            campaignDiscountAmount: priceCalculation.campaignDiscountAmount,
+            totalDiscountAmount: priceCalculation.totalDiscountAmount,
+            isInCampaign: true,
+            campaignId: campaignInfo.campaignId,
+            campaignName: campaignInfo.campaignName,
+            campaignEndTime: campaignInfo.campaignEndTime
+          });
+          
+          setCampaignData(campaignInfo);
+        } else {
+          // Product not in campaign, use regular pricing
+          const regularPrice = productData.discount > 0 
+            ? productData.price - (productData.price * (productData.discount || 0) / 100)
+            : productData.price;
+          
+          setProduct({
+            ...productData,
+            originalPrice: productData.price,
+            productDiscount: productData.discount || 0,
+            campaignDiscount: 0,
+            campaignFinalPrice: regularPrice,
+            campaignProductDiscountPrice: regularPrice,
+            campaignDiscountAmount: 0,
+            totalDiscountAmount: productData.discount > 0 ? productData.price - regularPrice : 0,
+            isInCampaign: false
+          });
         }
-        if (data.availableColors.length === 1) {
-          setSelectedColor(data.availableColors[0]);
+        
+        setMainImage(productData.images?.[0] || '');
+        
+        if (productData.availableSizes?.length === 1) {
+          setSelectedSize(productData.availableSizes[0].size);
+        }
+        if (productData.availableColors?.length === 1) {
+          setSelectedColor(productData.availableColors[0]);
         }
         
         setIsLoading(false);
@@ -66,14 +196,15 @@ const SingleProductList = () => {
       }
     };
 
-    fetchProduct();
+    if (id) {
+      fetchProduct();
+    }
   }, [id]);
 
-  // Fetch reviews
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const response = await fetch(`https://ruhana-adv.onrender.com/api/reviews/${id}`);
+        const response = await fetch(`http://localhost:5000/api/reviews/${id}`);
         const data = await response.json();
         setReviews(data);
       } catch (error) {
@@ -81,23 +212,48 @@ const SingleProductList = () => {
       }
     };
 
-    fetchReviews();
-  }, [id]);
+    if (product) {
+      fetchReviews();
+    }
+  }, [id, product]);
 
-  // Enhanced image zoom functionality
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        setContainerDimensions({
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight
+        });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, [product]);
+
   const handleMouseMove = (e) => {
-    if (!product || !product.images) return;
+    if (!containerRef.current) return;
     
-    const container = e.currentTarget;
-    const { left, top, width, height } = container.getBoundingClientRect();
-    const x = ((e.clientX - left) / width) * 100;
-    const y = ((e.clientY - top) / height) * 100;
+    const container = containerRef.current;
+    const { left, top } = container.getBoundingClientRect();
+    const x = e.clientX - left;
+    const y = e.clientY - top;
     
-    setZoomPosition({ x, y });
-    setShowZoom(true);
+    const lensWidth = 150;
+    const lensHeight = 150;
+    let lensX = x - lensWidth / 2;
+    let lensY = y - lensHeight / 2;
+    
+    if (lensX < 0) lensX = 0;
+    if (lensY < 0) lensY = 0;
+    if (lensX + lensWidth > containerDimensions.width) lensX = containerDimensions.width - lensWidth;
+    if (lensY + lensHeight > containerDimensions.height) lensY = containerDimensions.height - lensHeight;
+    
+    setLensPosition({ x: lensX, y: lensY });
   };
 
-  // Review handling
   const handleRatingChange = (newRating) => {
     setNewReview((prev) => ({ ...prev, rating: newRating }));
   };
@@ -109,7 +265,7 @@ const SingleProductList = () => {
     }
 
     try {
-      const response = await fetch(`https://ruhana-adv.onrender.com/api/reviews/add`, {
+      const response = await fetch(`http://localhost:5000/api/reviews/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...newReview, productId: id }),
@@ -148,23 +304,73 @@ const SingleProductList = () => {
   };
 
   const shareProduct = () => {
+    const shareUrl = product ? `https://jonabbd.com/product/${id}` : window.location.href;
+    
     if (navigator.share) {
       navigator.share({
         title: product.productName,
-        text: 'Check out this amazing product!',
-        url: window.location.href,
+        text: 'Check out this amazing smartphone!',
+        url: shareUrl,
       })
       .then(() => toast.success('Product shared successfully!'))
       .catch((error) => toast.error('Error sharing product'));
     } else {
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(shareUrl);
       toast.success('Link copied to clipboard!');
     }
   };
 
-  // Product selection and cart handling
-  const selectedSizePrice = product?.availableSizes?.find(sizeObj => sizeObj.size === selectedSize)?.sizePrice || product?.price || 0;
-  const discountedPrice = selectedSizePrice * (1 - (product?.discount || 0) / 100);
+  // Calculate price with size variation
+  const calculatePrice = () => {
+    if (!product) return {
+      currentPrice: 0,
+      originalPrice: 0,
+      productDiscountAmount: 0,
+      campaignDiscountAmount: 0,
+      totalSavings: 0
+    };
+
+    // Get base price for selected size
+    const sizeObject = product.availableSizes?.find(sizeObj => sizeObj.size === selectedSize);
+    const basePrice = sizeObject?.sizePrice || product.originalPrice || product.price || 0;
+    
+    // If product is in campaign, use campaign calculation
+    if (product.isInCampaign && product.campaignDiscount > 0) {
+      const priceCalculation = calculateCampaignPrice(
+        basePrice,
+        product.productDiscount || 0,
+        product.campaignDiscount
+      );
+      
+      return {
+        currentPrice: priceCalculation.finalPrice,
+        originalPrice: basePrice,
+        productDiscountPrice: priceCalculation.productDiscountPrice,
+        productDiscountAmount: basePrice - priceCalculation.productDiscountPrice,
+        campaignDiscountAmount: priceCalculation.campaignDiscountAmount,
+        totalSavings: priceCalculation.totalDiscountAmount,
+        isInCampaign: true
+      };
+    } else {
+      // Regular price calculation
+      const productDiscount = product.productDiscount || 0;
+      const discountedPrice = productDiscount > 0 
+        ? basePrice - (basePrice * productDiscount / 100)
+        : basePrice;
+      
+      return {
+        currentPrice: Math.round(discountedPrice),
+        originalPrice: basePrice,
+        productDiscountPrice: discountedPrice,
+        productDiscountAmount: productDiscount > 0 ? basePrice - discountedPrice : 0,
+        campaignDiscountAmount: 0,
+        totalSavings: productDiscount > 0 ? basePrice - discountedPrice : 0,
+        isInCampaign: false
+      };
+    }
+  };
+
+  const priceData = calculatePrice();
 
   const handleSizeSelection = (size) => {
     setSelectedSize(size);
@@ -183,63 +389,87 @@ const SingleProductList = () => {
   };
 
   const addToCart = () => {
-    // If only one size/color is available, auto-select it
-    const sizeToUse = product.availableSizes.length === 1 ? product.availableSizes[0].size : selectedSize;
-    const colorToUse = product.availableColors.length === 1 ? product.availableColors[0] : selectedColor;
+  const sizeToUse = product.availableSizes?.length === 1 ? product.availableSizes[0].size : selectedSize;
+  const colorToUse = product.availableColors?.length === 1 ? product.availableColors[0] : selectedColor;
+  
+  if (!sizeToUse || !colorToUse) {
+    toast.error("Please select both size and color.");
+    return;
+  }
+
+  const existingCartItems = JSON.parse(localStorage.getItem('cart_guest')) || [];
+  
+  // DEBUG LOG - Check what price we're using
+  console.log('Adding to cart with price:', {
+    currentPrice: priceData.currentPrice,
+    originalPrice: priceData.originalPrice,
+    productDiscount: product.productDiscount,
+    campaignDiscount: product.campaignDiscount,
+    isInCampaign: product.isInCampaign
+  });
+  
+  // Use the CORRECT calculated price - this is the actual priceData.currentPrice
+  const finalPrice = priceData.currentPrice;
+  
+  const existingItem = existingCartItems.find(
+    (item) =>
+      item._id === product._id &&
+      item.selectedSize === sizeToUse &&
+      item.selectedColor === colorToUse
+  );
+
+  if (existingItem) {
+    const updatedQuantity = existingItem.quantity + quantity;
+    if (updatedQuantity > product.stock) {
+      toast.error(`Cannot add more than ${product.stock} items to the cart.`);
+      return;
+    }
+    existingItem.quantity = updatedQuantity;
+    localStorage.setItem('cart_guest', JSON.stringify(existingCartItems));
+    toast.info("Product quantity increased in the cart!");
+  } else {
+    if (product.stock < quantity) {
+      toast.error("Not enough stock available!");
+      return;
+    }
+    // Create cart item with ALL necessary price information
+    const cartItem = {
+      ...product,
+      // PRICE FIX: Store the original base price and discount separately
+      originalPrice: priceData.originalPrice,
+      productDiscount: product.productDiscount || 0,
+      campaignDiscount: product.campaignDiscount || 0,
+      isInCampaign: product.isInCampaign || false,
+      // Store the final calculated price
+      price: finalPrice,  // This is what shows in cart
+      quantity,
+      selectedSize: sizeToUse,
+      selectedColor: colorToUse,
+      campaignId: product.campaignId || null,
+      campaignName: product.campaignName || null,
+      // Add these for debugging
+      _calculatedFinalPrice: finalPrice,
+      _calculatedProductDiscount: product.productDiscount,
+      _calculatedCampaignDiscount: product.campaignDiscount
+    };
     
-    if (!sizeToUse || !colorToUse) {
-      toast.error("Please select both size and color.");
-      return;
-    }
-
-    const selectedSizePrice = product.availableSizes?.find(
-      (sizeObj) => sizeObj.size === sizeToUse
-    )?.sizePrice;
-
-    if (!selectedSizePrice) {
-      toast.error("Invalid size selected.");
-      return;
-    }
-
-    const existingCartItems = JSON.parse(localStorage.getItem('cart_guest')) || [];
-    const existingItem = existingCartItems.find(
-      (item) =>
-        item._id === product._id &&
-        item.selectedSize === sizeToUse &&
-        item.selectedColor === colorToUse
-    );
-
-    if (existingItem) {
-      const updatedQuantity = existingItem.quantity + quantity;
-      if (updatedQuantity > product.stock) {
-        toast.error(`Cannot add more than ${product.stock} items to the cart.`);
-        return;
-      }
-      existingItem.quantity = updatedQuantity;
-      localStorage.setItem('cart_guest', JSON.stringify(existingCartItems));
-      toast.info("Product quantity increased in the cart!");
-    } else {
-      if (product.stock < quantity) {
-        toast.error("Not enough stock available!");
-        return;
-      }
-      const cartItem = {
-        ...product,
-        price: selectedSizePrice,
-        quantity,
-        selectedSize: sizeToUse,
-        selectedColor: colorToUse,
-      };
-      existingCartItems.push(cartItem);
-      localStorage.setItem('cart_guest', JSON.stringify(existingCartItems));
-      toast.success("Product added to the cart!");
-    }
-  };
-
+    // Remove duplicate properties
+    delete cartItem.campaignFinalPrice;
+    delete cartItem.campaignProductDiscountPrice;
+    delete cartItem.campaignDiscountAmount;
+    delete cartItem.totalDiscountAmount;
+    
+    existingCartItems.push(cartItem);
+    localStorage.setItem('cart_guest', JSON.stringify(existingCartItems));
+    toast.success("Product added to the cart!");
+    
+    // DEBUG: Log what was stored
+    console.log('Stored in cart:', cartItem);
+  }
+};
   const handleOrderNow = () => {
-    // If only one size/color is available, auto-select it
-    const sizeToUse = product.availableSizes.length === 1 ? product.availableSizes[0].size : selectedSize;
-    const colorToUse = product.availableColors.length === 1 ? product.availableColors[0] : selectedColor;
+    const sizeToUse = product.availableSizes?.length === 1 ? product.availableSizes[0].size : selectedSize;
+    const colorToUse = product.availableColors?.length === 1 ? product.availableColors[0] : selectedColor;
     
     if (!sizeToUse || !colorToUse) {
       toast.error("Please select both size and color before proceeding.");
@@ -253,7 +483,7 @@ const SingleProductList = () => {
   const handleOrderOnWhatsApp = () => {
     const phoneNumber = "+8801994830798";
     const productName = product.productName;
-    const currentURL = window.location.href;
+    const currentURL = product ? `https://jonabbd.com/product/${id}` : window.location.href;
     const message = `Hello, I am interested in purchasing: *${productName}*. Here is the link: ${currentURL}`;
     const encodedMessage = encodeURIComponent(message);
     const whatsappURL = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
@@ -261,26 +491,143 @@ const SingleProductList = () => {
     window.open(whatsappURL, "_blank");
   };
 
-  // Calculate average rating
   const totalReviews = reviews.length;
   const averageRating = totalReviews > 0
     ? (reviews.reduce((acc, review) => acc + review.rating, 0) / totalReviews).toFixed(1)
-    : null;
+    : 4.5;
+
+  const currentUrl = product 
+    ? `https://jonabbd.com/product/${id}`
+    : window.location.href;
+
+  // Function to format date
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  // Calculate time left for campaign
+  const calculateTimeLeft = (endTime) => {
+    if (!endTime) return '';
+    const end = new Date(endTime);
+    const now = new Date();
+    const diff = end - now;
+    
+    if (diff <= 0) return 'Ended';
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (days > 0) return `${days}d ${hours}h left`;
+    if (hours > 0) return `${hours}h ${minutes}m left`;
+    return `${minutes}m left`;
+  };
 
   if (isLoading || !product) {
-    return <Loading />;
+    return (
+      <div className="min-h-screen bg-white text-black">
+        <Navbar />
+        <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Loading />
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
+  // Extract mobile specifications from description
+  const extractMobileSpecs = () => {
+    const specs = {
+      display: '',
+      camera: '',
+      battery: '',
+      processor: '',
+      storage: '',
+      ram: '',
+      os: ''
+    };
+
+    if (product.description) {
+      const desc = product.description.toLowerCase();
+      
+      // Extract display
+      const displayMatch = product.description.match(/(\d+\.?\d*\s*["']?[a-zA-Z]*\s*[a-zA-Z]+\s*[a-zA-Z]*)/);
+      if (displayMatch) specs.display = displayMatch[0];
+      
+      // Extract camera
+      const cameraMatch = product.description.match(/\d+MP/g);
+      if (cameraMatch) specs.camera = cameraMatch.join(' + ');
+      
+      // Extract battery
+      const batteryMatch = product.description.match(/\d+mAh/i);
+      if (batteryMatch) specs.battery = batteryMatch[0];
+      
+      // Extract processor
+      if (desc.includes('snapdragon')) specs.processor = 'Snapdragon';
+      else if (desc.includes('mediatek')) specs.processor = 'MediaTek';
+      else if (desc.includes('exynos')) specs.processor = 'Exynos';
+      
+      // Extract storage
+      const storageMatch = product.description.match(/\d+GB/i);
+      if (storageMatch) specs.storage = storageMatch[0];
+      
+      // Extract RAM
+      const ramMatch = product.description.match(/\d+GB RAM/i);
+      if (ramMatch) specs.ram = ramMatch[0];
+      
+      // Extract OS
+      if (desc.includes('android')) specs.os = 'Android';
+      else if (desc.includes('ios')) specs.os = 'iOS';
+    }
+
+    return specs;
+  };
+
+  const mobileSpecs = extractMobileSpecs();
+
   return (
-    <div className="min-h-screen bg-white text-gray-800" ref={topRef}>
+    <div className="min-h-screen bg-white text-black" ref={topRef}>
+      <Helmet>
+        <title>{`${product.productName} - Buy at ${priceData.currentPrice.toFixed(0)}৳ | Jonab BD`}</title>
+        <meta name="description" content={`${product.description.substring(0, 155)}... Buy ${product.productName} online in Bangladesh. Available in ${product.availableColors?.join(', ') || 'various'} colors. Product Code: ${product.productCode}. Free delivery.`} />
+        <meta name="keywords" content={`${product.productName}, ${product.category}, ${product.subCategory}, smartphone, mobile, bangladesh, jonab bd`} />
+        
+        <meta property="og:type" content="product" />
+        <meta property="og:url" content={currentUrl} />
+        <meta property="og:title" content={`${product.productName} - ${priceData.currentPrice.toFixed(0)}৳ | Jonab BD`} />
+        <meta property="og:description" content={`${product.description.substring(0, 155)}... Available in ${product.availableColors?.join(', ') || 'various'} colors.`} />
+        <meta property="og:image" content={product.images[0]} />
+        <meta property="og:site_name" content="Jonab BD" />
+        <meta property="product:price:amount" content={priceData.currentPrice.toString()} />
+        <meta property="product:price:currency" content="BDT" />
+        <meta property="product:brand" content="Jonab BD" />
+        <meta property="product:availability" content={product.stock > 0 ? "in stock" : "out of stock"} />
+        <meta property="product:condition" content="new" />
+        
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={currentUrl} />
+        <meta name="twitter:title" content={`${product.productName} - ${priceData.currentPrice.toFixed(0)}৳ | Jonab BD`} />
+        <meta name="twitter:description" content={`${product.description.substring(0, 155)}...`} />
+        <meta name="twitter:image" content={product.images[0]} />
+        
+        <link rel="canonical" href={currentUrl} />
+        
+        <meta name="robots" content="index, follow" />
+        <meta name="author" content="Jonab BD" />
+      </Helmet>
+
       <Navbar />
       
-      {/* Floating action buttons */}
       <motion.div 
         className="fixed right-4 top-1/3 z-30 flex flex-col space-y-3"
         initial={{ x: 100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.5, type: "spring" }}
       >
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -296,28 +643,52 @@ const SingleProductList = () => {
           className="w-10 h-10 md:w-12 md:h-12 rounded-full shadow-lg flex items-center justify-center bg-white border border-gray-200"
           onClick={shareProduct}
         >
-          <FaShare className="text-gray-600 text-lg" />
+          <FaShare className="text-black text-lg" />
         </motion.button>
       </motion.div>
       
-      {/* Main content */}
       <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="rounded-3xl shadow-xl overflow-hidden border border-gray-100 bg-white"
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="rounded-xl overflow-hidden border border-gray-200 bg-white"
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-4 sm:p-6 md:p-8">
-            {/* Product Images */}
             <motion.div 
               className="space-y-6"
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
+              {/* Campaign Badge */}
+              {product.isInCampaign && (
+                <div className="relative z-20">
+                  <div className="px-4 py-2 bg-red-600 text-white rounded-full text-xs font-light tracking-widest uppercase flex items-center gap-2 mb-4 w-fit">
+                    <FaFire className="w-3 h-3" />
+                    <span>CAMPAIGN DEAL - EXTRA {product.campaignDiscount}% OFF</span>
+                  </div>
+                  
+                  {/* Campaign Timer */}
+                  <div className="mb-4 p-4 bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FaClock className="w-4 h-4 text-red-600" />
+                        <span className="text-sm font-light text-red-700">
+                          {calculateTimeLeft(product.campaignEndTime)}
+                        </span>
+                      </div>
+                      <span className="text-xs text-red-600 font-light">
+                        {product.campaignName}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div 
-                className="relative overflow-hidden rounded-2xl border border-gray-200 group aspect-square"
+                className="relative overflow-hidden rounded-xl border border-gray-200 group aspect-square"
+                ref={containerRef}
                 onMouseMove={handleMouseMove}
                 onMouseEnter={() => setShowZoom(true)}
                 onMouseLeave={() => setShowZoom(false)}
@@ -325,33 +696,46 @@ const SingleProductList = () => {
                 <motion.img
                   src={mainImage}
                   alt={product.productName}
-                  className="w-full h-full object-contain transition-all duration-300 cursor-zoom-in"
-                  style={{
-                    transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                    transform: showZoom ? "scale(2)" : "scale(1)"
-                  }}
+                  className="w-full h-full object-contain transition-all duration-300 cursor-zoom-in relative z-0"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.5 }}
                 />
                 
                 {showZoom && (
-                  <motion.div 
-                    className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white bg-opacity-80 flex items-center justify-center pointer-events-none shadow-sm"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <TbZoomInArea className="text-gray-700 text-xl" />
-                  </motion.div>
+                  <>
+                    <motion.div 
+                      className="hidden lg:block absolute z-20 border border-gray-300 bg-white bg-opacity-30 pointer-events-none"
+                      style={{
+                        width: '150px',
+                        height: '150px',
+                        left: `${lensPosition.x}px`,
+                        top: `${lensPosition.y}px`,
+                      }}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                    />
+                    
+                    <motion.div 
+                      className="hidden lg:block absolute inset-0 z-10 pointer-events-none bg-no-repeat"
+                      style={{
+                        backgroundImage: `url(${mainImage})`,
+                        backgroundSize: `${containerDimensions.width * 2}px ${containerDimensions.height * 2}px`,
+                        backgroundPosition: `${-lensPosition.x * 2 + 75}px ${-lensPosition.y * 2 + 75}px`,
+                      }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    />
+                  </>
                 )}
                 
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white bg-opacity-80 flex items-center justify-center shadow-sm"
+                  className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm z-30 border border-gray-200"
                   onClick={() => openImageModal(product.images.indexOf(mainImage))}
                 >
-                  <FaExpand className="text-gray-700" />
+                  <FaExpand className="text-black" />
                 </motion.button>
               </div>
               
@@ -365,11 +749,10 @@ const SingleProductList = () => {
                   >
                     <img
                       src={img}
-                      alt={`Thumbnail ${idx + 1}`}
-                      className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-xl cursor-pointer border-2 transition-all"
+                      alt={`${product.productName} - View ${idx + 1}`}
+                      className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-lg cursor-pointer border-2 transition-all"
                       style={{ 
-                        borderColor: idx === product.images.indexOf(mainImage) ? "#3b82f6" : "transparent",
-                        filter: idx !== product.images.indexOf(mainImage) ? "brightness(95%)" : "none"
+                        borderColor: idx === product.images.indexOf(mainImage) ? "#000" : "transparent",
                       }}
                       onClick={() => setMainImage(img)}
                     />
@@ -377,7 +760,6 @@ const SingleProductList = () => {
                 ))}
               </div>
               
-              {/* Product Video - Modern Design */}
               {product.videoUrl && (
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
@@ -385,8 +767,8 @@ const SingleProductList = () => {
                   transition={{ delay: 0.3 }}
                   className="mt-6"
                 >
-                  <h3 className="text-xl font-semibold mb-3 text-gray-700">Product Video</h3>
-                  <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-black">
+                  <h3 className="text-lg font-light tracking-widest uppercase mb-3 text-black">PRODUCT VIDEO</h3>
+                  <div className="rounded-xl overflow-hidden border border-gray-200 bg-black">
                     <div className="aspect-w-16 aspect-h-9">
                       <ReactPlayer
                         url={product.videoUrl}
@@ -395,21 +777,72 @@ const SingleProductList = () => {
                         height="100%"
                         light={product.images[0]}
                         playing={false}
-                        playIcon={
-                          <div className="w-16 h-16 rounded-full bg-blue-600 bg-opacity-80 flex items-center justify-center">
-                            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        }
                       />
                     </div>
                   </div>
                 </motion.div>
               )}
+
+              {/* Mobile Specifications */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="mt-6"
+              >
+                <h3 className="text-lg font-light tracking-widest uppercase mb-4 text-black">KEY SPECIFICATIONS</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {mobileSpecs.display && (
+                    <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                        <FaMobileAlt className="w-4 h-4 text-black" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-widest">Display</p>
+                        <p className="text-sm font-light">{mobileSpecs.display}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {mobileSpecs.camera && (
+                    <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                        <FaCamera className="w-4 h-4 text-black" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-widest">Camera</p>
+                        <p className="text-sm font-light">{mobileSpecs.camera}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {mobileSpecs.battery && (
+                    <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                        <FaBatteryFull className="w-4 h-4 text-black" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-widest">Battery</p>
+                        <p className="text-sm font-light">{mobileSpecs.battery}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {mobileSpecs.processor && (
+                    <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                        <FaBolt className="w-4 h-4 text-black" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-widest">Processor</p>
+                        <p className="text-sm font-light">{mobileSpecs.processor}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             </motion.div>
 
-            {/* Product Details */}
             <motion.div 
               className="space-y-6"
               initial={{ x: 20, opacity: 0 }}
@@ -417,11 +850,17 @@ const SingleProductList = () => {
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <div>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">{product.productName}</h1>
-                <p className="text-base md:text-lg mt-1 text-gray-600">Product Code: {product.productCode}</p>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-thin tracking-widest uppercase text-black">{product.productName}</h1>
+                <p className="text-base md:text-lg mt-1 text-gray-600 font-light">Product Code: {product.productCode}</p>
+                <div className="flex items-center space-x-2 text-sm text-gray-500 mt-2 font-light tracking-wide">
+                  <span>HOME</span>
+                  <span>›</span>
+                  <span>{product.category}</span>
+                  <span>›</span>
+                  <span className="text-black">{product.productName}</span>
+                </div>
               </div>
               
-              {/* Ratings */}
               <motion.div 
                 className="flex items-center"
                 initial={{ opacity: 0 }}
@@ -444,86 +883,114 @@ const SingleProductList = () => {
                     );
                   })}
                 </div>
-                <p className="ml-2 text-base md:text-lg font-semibold text-gray-700">
-                  {averageRating} <span className="text-gray-500">({totalReviews} Reviews)</span>
+                <p className="ml-2 text-base md:text-lg font-light text-black">
+                  {averageRating} <span className="text-gray-500">({totalReviews} REVIEWS)</span>
                 </p>
               </motion.div>
               
-              {/* Pricing */}
+              {/* PRICE SECTION - FIXED WITH CAMPAIGN DISCOUNT */}
               <motion.div 
-                className="p-4 rounded-xl border border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50"
+                className="p-4 rounded-xl border border-gray-200 bg-white"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
               >
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <p className="text-2xl md:text-3xl font-bold text-gray-900">
-                    ৳ {discountedPrice.toFixed(2)}
-                  </p>
-                  {product.discount > 0 && (
-                    <>
-                      <span className="line-through text-lg md:text-xl text-gray-500">৳ {selectedSizePrice.toFixed(2)}</span>
-                      <motion.span 
-                        className="px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-600"
-                        initial={{ scale: 0.8 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", stiffness: 300 }}
-                      >
-                        {product.discount}% OFF
-                      </motion.span>
-                    </>
+                {/* Original Price */}
+                <div className="mb-2">
+                  <p className="text-sm text-gray-500 font-light">REGULAR PRICE</p>
+                  <p className="text-lg text-gray-400 line-through">৳ {priceData.originalPrice.toLocaleString()}</p>
+                </div>
+
+                {/* Discount Breakdown */}
+                <div className="space-y-2 mb-4">
+                  {priceData.productDiscountAmount > 0 && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FaPercent className="w-3 h-3 text-blue-600" />
+                        <span className="text-sm font-light">Product Discount ({product.productDiscount}%)</span>
+                      </div>
+                      <span className="text-sm font-light text-blue-600">-৳ {priceData.productDiscountAmount.toFixed(0)}</span>
+                    </div>
+                  )}
+                  
+                  {priceData.campaignDiscountAmount > 0 && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FaFire className="w-3 h-3 text-red-600" />
+                        <span className="text-sm font-light">Campaign Discount ({product.campaignDiscount}%)</span>
+                      </div>
+                      <span className="text-sm font-light text-red-600">-৳ {priceData.campaignDiscountAmount.toFixed(0)}</span>
+                    </div>
                   )}
                 </div>
-                <p className="mt-1 text-gray-600">
-                  You Save: ৳ {(selectedSizePrice - discountedPrice).toFixed(2)}
-                </p>
+
+                {/* Final Price */}
+                <div className="border-t border-gray-200 pt-4">
+                  <p className="text-sm text-gray-500 font-light mb-1">FINAL PRICE</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl md:text-4xl font-thin tracking-widest text-black">
+                      ৳ {priceData.currentPrice.toLocaleString()}
+                    </p>
+                    {priceData.totalSavings > 0 && (
+                      <span className="text-sm text-green-600 font-light">
+                        (Save ৳{priceData.totalSavings.toFixed(0)})
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Discount Badges */}
+                <div className="flex items-center gap-2 mt-4">
+                  {product.productDiscount > 0 && (
+                    <span className="px-3 py-1 rounded-full text-xs font-light bg-blue-100 text-blue-600 border border-blue-200">
+                      {product.productDiscount}% OFF
+                    </span>
+                  )}
+                  {product.isInCampaign && product.campaignDiscount > 0 && (
+                    <span className="px-3 py-1 rounded-full text-xs font-light bg-red-100 text-red-600 border border-red-200">
+                      EXTRA {product.campaignDiscount}% OFF
+                    </span>
+                  )}
+                </div>
               </motion.div>
               
-              {/* Size Selection */}
+              {/* Stock Status */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
               >
-                <h3 className="text-lg md:text-xl font-semibold mb-3 text-gray-700">Select Size</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {product.availableSizes.map((sizeObj) => (
-                    <motion.button
-                      key={sizeObj.size}
-                      className={`px-3 py-2 md:px-4 md:py-3 rounded-xl text-center transition-all font-medium border ${
-                        selectedSize === sizeObj.size
-                          ? "bg-blue-600 text-white border-blue-600 shadow-md"
-                          : "bg-transparent border-gray-300 text-gray-700 hover:border-gray-500"
-                      }`}
-                      onClick={() => handleSizeSelection(sizeObj.size)}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {sizeObj.size} - ৳ {sizeObj.sizePrice.toFixed(2)}
-                    </motion.button>
-                  ))}
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${product.stock > 10 ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                    <span className={`text-sm font-light ${product.stock > 10 ? 'text-green-600' : 'text-yellow-600'}`}>
+                      {product.stock > 10 ? 'IN STOCK' : 'LOW STOCK'}
+                    </span>
+                  </div>
+                  <span className="text-sm text-gray-500 font-light">
+                    {product.stock} UNITS AVAILABLE
+                  </span>
                 </div>
               </motion.div>
               
-              {/* Color Selection */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
+                transition={{ delay: 0.5 }}
               >
-                <h3 className="text-lg md:text-xl font-semibold mb-3 text-gray-700">Select Color</h3>
+                <h3 className="text-lg font-light tracking-widest uppercase mb-3 text-black">SELECT COLOR</h3>
                 <div className="flex flex-wrap gap-3">
-                  {product.availableColors.map((color) => (
+                  {product.availableColors?.map((color) => (
                     <motion.button
                       key={color}
                       className={`w-8 h-8 md:w-10 md:h-10 rounded-full border-2 transition-all ${
-                        selectedColor === color ? "scale-110 ring-2 ring-offset-2 ring-blue-500 shadow-md" : ""
+                        selectedColor === color ? "scale-110 ring-2 ring-offset-2 ring-black shadow-md" : ""
                       }`}
                       style={{ 
                         backgroundColor: color,
-                        borderColor: selectedColor === color ? "#3b82f6" : "#e5e7eb"
+                        borderColor: selectedColor === color ? "#000" : "#e5e7eb"
                       }}
-                      onClick={() => handleColorSelection(color)}
+                      onClick={() => setSelectedColor(color)}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                     ></motion.button>
@@ -531,36 +998,78 @@ const SingleProductList = () => {
                 </div>
               </motion.div>
               
-              {/* Quantity */}
+              {product.availableSizes?.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-lg font-light tracking-widest uppercase text-black">SELECT VARIANT</h3>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {product.availableSizes.map((sizeObj) => {
+                      // Calculate price for this specific size
+                      const sizeBasePrice = sizeObj.sizePrice;
+                      const sizePriceData = product.isInCampaign && product.campaignDiscount > 0
+                        ? calculateCampaignPrice(sizeBasePrice, product.productDiscount || 0, product.campaignDiscount)
+                        : {
+                            finalPrice: product.productDiscount > 0 
+                              ? sizeBasePrice - (sizeBasePrice * product.productDiscount / 100)
+                              : sizeBasePrice
+                          };
+                      
+                      return (
+                        <motion.button
+                          key={sizeObj.size}
+                          className={`px-3 py-3 md:px-4 rounded-lg text-center transition-all font-light border-2 ${
+                            selectedSize === sizeObj.size
+                              ? "border-black bg-black text-white"
+                              : "bg-transparent border-gray-300 text-black hover:border-gray-500"
+                          }`}
+                          onClick={() => handleSizeSelection(sizeObj.size)}
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <span className="block font-light tracking-wide">{sizeObj.size}</span>
+                          <span className="text-sm">
+                            ৳ {Math.round(sizePriceData.finalPrice).toLocaleString()}
+                          </span>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+              
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
               >
-                <h3 className="text-lg md:text-xl font-semibold mb-3 text-gray-700">Quantity</h3>
+                <h3 className="text-lg font-light tracking-widest uppercase mb-3 text-black">QUANTITY</h3>
                 <div className="flex items-center space-x-4">
                   <motion.button
                     onClick={() => handleQuantityChange(quantity - 1)}
                     disabled={quantity <= 1}
-                    className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow border border-gray-300 bg-white"
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center border border-gray-300 bg-white disabled:opacity-50"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <FaMinus className="text-gray-600" />
+                    <FaMinus className="text-black" />
                   </motion.button>
-                  <span className="text-xl md:text-2xl font-bold w-12 text-center text-gray-900">{quantity}</span>
+                  <span className="text-xl md:text-2xl font-thin tracking-widest w-12 text-center text-black">{quantity}</span>
                   <motion.button
                     onClick={() => handleQuantityChange(quantity + 1)}
-                    className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow border border-gray-300 bg-white"
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center border border-gray-300 bg-white"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <FaPlus className="text-gray-600" />
+                    <FaPlus className="text-black" />
                   </motion.button>
                 </div>
               </motion.div>
               
-              {/* Action Buttons */}
               <motion.div 
                 className="space-y-4 pt-4"
                 initial={{ opacity: 0 }}
@@ -570,36 +1079,35 @@ const SingleProductList = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <motion.button
                     onClick={addToCart}
-                    className="py-3 md:py-4 text-base md:text-lg font-bold rounded-xl flex items-center justify-center space-x-2 bg-gray-900 border border-gray-800 hover:bg-gray-800 text-white transition-colors"
+                    className="py-3 md:py-4 text-base md:text-lg font-light tracking-widest uppercase rounded-lg flex items-center justify-center space-x-2 bg-white border-2 border-black text-black hover:bg-black hover:text-white transition-colors"
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <FaShoppingCart className="text-lg" />
-                    <span>Add to Cart</span>
+                    <span>ADD TO CART</span>
                   </motion.button>
                   
                   <motion.button
                     onClick={handleOrderNow}
-                    className="py-3 md:py-4 text-base md:text-lg font-bold rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md"
+                    className="py-3 md:py-4 text-base md:text-lg font-light tracking-widest uppercase rounded-lg bg-black text-white hover:bg-gray-900"
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    Order Now
+                    ORDER NOW
                   </motion.button>
                 </div>
                 
                 <motion.button
                   onClick={handleOrderOnWhatsApp}
-                  className="w-full py-3 md:py-4 text-base md:text-lg font-semibold rounded-xl flex items-center justify-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-md"
+                  className="w-full py-3 md:py-4 text-base md:text-lg font-light tracking-widest uppercase rounded-lg flex items-center justify-center space-x-2 bg-green-600 text-white hover:bg-green-700"
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <FaWhatsapp className="text-xl" />
-                  <span>Order on WhatsApp</span>
+                  <span>ORDER ON WHATSAPP</span>
                 </motion.button>
               </motion.div>
               
-              {/* Product Features */}
               <motion.div 
                 className="grid grid-cols-2 gap-3 mt-6"
                 initial={{ opacity: 0 }}
@@ -607,38 +1115,37 @@ const SingleProductList = () => {
                 transition={{ delay: 0.9 }}
               >
                 <motion.div 
-                  className="flex items-center space-x-2 p-3 rounded-lg border border-gray-200 bg-gray-50 shadow-sm"
+                  className="flex items-center space-x-2 p-3 rounded-lg border border-gray-200 bg-white"
                   whileHover={{ y: -5 }}
                 >
-                  <FaShippingFast className="text-lg md:text-xl text-blue-600" />
-                  <span className="text-xs md:text-sm text-gray-700">Free Shipping</span>
+                  <FaShippingFast className="text-lg md:text-xl text-black" />
+                  <span className="text-xs md:text-sm text-black font-light">FREE SHIPPING</span>
                 </motion.div>
                 <motion.div 
-                  className="flex items-center space-x-2 p-3 rounded-lg border border-gray-200 bg-gray-50 shadow-sm"
+                  className="flex items-center space-x-2 p-3 rounded-lg border border-gray-200 bg-white"
                   whileHover={{ y: -5 }}
                 >
-                  <FaExchangeAlt className="text-lg md:text-xl text-blue-600" />
-                  <span className="text-xs md:text-sm text-gray-700">Easy Returns</span>
+                  <FaExchangeAlt className="text-lg md:text-xl text-black" />
+                  <span className="text-xs md:text-sm text-black font-light">7 DAYS RETURN</span>
                 </motion.div>
                 <motion.div 
-                  className="flex items-center space-x-2 p-3 rounded-lg border border-gray-200 bg-gray-50 shadow-sm"
+                  className="flex items-center space-x-2 p-3 rounded-lg border border-gray-200 bg-white"
                   whileHover={{ y: -5 }}
                 >
-                  <FaLock className="text-lg md:text-xl text-blue-600" />
-                  <span className="text-xs md:text-sm text-gray-700">Secure Payment</span>
+                  <FaLock className="text-lg md:text-xl text-black" />
+                  <span className="text-xs md:text-sm text-black font-light">SECURE PAYMENT</span>
                 </motion.div>
                 <motion.div 
-                  className="flex items-center space-x-2 p-3 rounded-lg border border-gray-200 bg-gray-50 shadow-sm"
+                  className="flex items-center space-x-2 p-3 rounded-lg border border-gray-200 bg-white"
                   whileHover={{ y: -5 }}
                 >
-                  <FaStar className="text-lg md:text-xl text-blue-600" />
-                  <span className="text-xs md:text-sm text-gray-700">Authentic Products</span>
+                  <FaCheck className="text-lg md:text-xl text-black" />
+                  <span className="text-xs md:text-sm text-black font-light">AUTHENTIC PRODUCT</span>
                 </motion.div>
               </motion.div>
             </motion.div>
           </div>
           
-          {/* Tabs Section */}
           <motion.div 
             className="px-4 sm:px-6 py-6 border-t border-gray-200 bg-white"
             initial={{ opacity: 0, y: 20 }}
@@ -648,17 +1155,24 @@ const SingleProductList = () => {
             <div className="flex space-x-4 border-b border-gray-200 overflow-x-auto custom-scrollbar">
               <button
                 onClick={() => setActiveTab("description")}
-                className={`px-3 py-2 md:px-4 md:py-3 text-base md:text-lg font-medium whitespace-nowrap ${activeTab === "description" ? "border-b-2 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-                style={{ borderColor: activeTab === "description" ? "#3b82f6" : "transparent" }}
+                className={`px-3 py-2 md:px-4 md:py-3 text-base md:text-lg font-light tracking-widest uppercase whitespace-nowrap ${activeTab === "description" ? "border-b-2 text-black" : "text-gray-500 hover:text-gray-700"}`}
+                style={{ borderColor: activeTab === "description" ? "#000" : "transparent" }}
               >
-                Description
+                DESCRIPTION
               </button>
               <button
-                onClick={() => setActiveTab("sizeChart")}
-                className={`px-3 py-2 md:px-4 md:py-3 text-base md:text-lg font-medium whitespace-nowrap ${activeTab === "sizeChart" ? "border-b-2 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-                style={{ borderColor: activeTab === "sizeChart" ? "#3b82f6" : "transparent" }}
+                onClick={() => setActiveTab("specifications")}
+                className={`px-3 py-2 md:px-4 md:py-3 text-base md:text-lg font-light tracking-widest uppercase whitespace-nowrap ${activeTab === "specifications" ? "border-b-2 text-black" : "text-gray-500 hover:text-gray-700"}`}
+                style={{ borderColor: activeTab === "specifications" ? "#000" : "transparent" }}
               >
-                Size Chart
+                SPECIFICATIONS
+              </button>
+              <button
+                onClick={() => setActiveTab("reviews")}
+                className={`px-3 py-2 md:px-4 md:py-3 text-base md:text-lg font-light tracking-widest uppercase whitespace-nowrap ${activeTab === "reviews" ? "border-b-2 text-black" : "text-gray-500 hover:text-gray-700"}`}
+                style={{ borderColor: activeTab === "reviews" ? "#000" : "transparent" }}
+              >
+                REVIEWS ({totalReviews})
               </button>
             </div>
 
@@ -671,108 +1185,143 @@ const SingleProductList = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.3 }}
-                    className="leading-relaxed text-gray-700 space-y-4"
+                    className="leading-relaxed text-black space-y-4"
                   >
                     {product.description.split('\n').map((paragraph, index) => (
-                      <p key={index} className="text-base md:text-lg">
+                      <p key={index} className="text-base md:text-lg font-light">
                         {paragraph}
                       </p>
                     ))}
                   </motion.div>
                 )}
                 
-                {activeTab === "sizeChart" && (
+                {activeTab === "specifications" && (
                   <motion.div
-                    key="sizeChart"
+                    key="specifications"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <div className="flex justify-center">
-                      <img
-                        src={product.sizeChart}
-                        alt="Size Chart"
-                        className="max-w-full max-h-[500px] object-contain rounded-lg border border-gray-200 shadow-sm"
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h4 className="text-lg font-light tracking-widest uppercase text-black">GENERAL</h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between border-b border-gray-100 py-2">
+                            <span className="text-gray-600 font-light">Brand</span>
+                            <span className="text-black font-light">Jonab BD</span>
+                          </div>
+                          <div className="flex justify-between border-b border-gray-100 py-2">
+                            <span className="text-gray-600 font-light">Model</span>
+                            <span className="text-black font-light">{product.productName}</span>
+                          </div>
+                          <div className="flex justify-between border-b border-gray-100 py-2">
+                            <span className="text-gray-600 font-light">Product Code</span>
+                            <span className="text-black font-light">{product.productCode}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <h4 className="text-lg font-light tracking-widest uppercase text-black">AVAILABILITY</h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between border-b border-gray-100 py-2">
+                            <span className="text-gray-600 font-light">Stock Status</span>
+                            <span className={`font-light ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between border-b border-gray-100 py-2">
+                            <span className="text-gray-600 font-light">Available Colors</span>
+                            <span className="text-black font-light">{product.availableColors?.join(', ')}</span>
+                          </div>
+                          <div className="flex justify-between border-b border-gray-100 py-2">
+                            <span className="text-gray-600 font-light">Available Variants</span>
+                            <span className="text-black font-light">{product.availableSizes?.map(s => s.size).join(', ')}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
+                  </motion.div>
+                )}
+                
+                {activeTab === "reviews" && (
+                  <motion.div
+                    key="reviews"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                      <div>
+                        <h2 className="text-xl md:text-2xl font-thin tracking-widest uppercase text-black">CUSTOMER REVIEWS</h2>
+                        <p className="text-gray-600 font-light mt-1">Average Rating: {averageRating} out of 5</p>
+                      </div>
+                      <motion.button
+                        onClick={toggleReviewModal}
+                        className="px-4 py-2 md:px-6 md:py-3 rounded-lg font-light tracking-widest uppercase bg-black text-white hover:bg-gray-900 text-sm md:text-base"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        WRITE A REVIEW
+                      </motion.button>
+                    </div>
+                    
+                    {reviews.length > 0 ? (
+                      <div className="space-y-6">
+                        {reviews.map((review, idx) => (
+                          <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            className="p-4 md:p-6 rounded-lg border border-gray-200 bg-white"
+                          >
+                            <div className="flex flex-col md:flex-row justify-between gap-2">
+                              <p className="font-light text-base md:text-lg text-black">{review.name}</p>
+                              <div className="flex space-x-1 text-yellow-400">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <span key={i}>
+                                    {review.rating > i ? (
+                                      <FaStar className="text-base md:text-lg" />
+                                    ) : (
+                                      <FaRegStar className="text-base md:text-lg" />
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <p className="mt-3 text-gray-600 text-sm md:text-base font-light">{review.comment}</p>
+                            <p className="mt-3 text-xs md:text-sm text-gray-500 font-light">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </p>
+                          </motion.div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10">
+                        <p className="text-base md:text-lg text-gray-500 font-light">No reviews yet. Be the first to review!</p>
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
           </motion.div>
-          
-          {/* Reviews Section */}
-          <motion.div 
-            className="px-4 sm:px-6 py-8 border-t border-gray-200 bg-white"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.1 }}
-          >
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900">Customer Reviews</h2>
-              <motion.button
-                onClick={toggleReviewModal}
-                className="px-4 py-2 md:px-6 md:py-3 rounded-full font-medium bg-blue-600 text-white hover:bg-blue-700 text-sm md:text-base"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Write a Review
-              </motion.button>
-            </div>
-            
-            {reviews.length > 0 ? (
-              <div className="space-y-6">
-                {reviews.map((review, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="p-4 md:p-6 rounded-xl border border-gray-200 bg-white shadow-sm"
-                  >
-                    <div className="flex flex-col md:flex-row justify-between gap-2">
-                      <p className="font-bold text-base md:text-lg text-gray-900">{review.name}</p>
-                      <div className="flex space-x-1 text-yellow-400">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <span key={i}>
-                            {review.rating > i ? (
-                              <FaStar className="text-base md:text-lg" />
-                            ) : (
-                              <FaRegStar className="text-base md:text-lg" />
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="mt-3 text-gray-600 text-sm md:text-base">{review.comment}</p>
-                    <p className="mt-3 text-xs md:text-sm text-gray-500">
-                      {new Date(review.createdAt).toLocaleDateString()}
-                    </p>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10">
-                <p className="text-base md:text-lg text-gray-500">No reviews yet. Be the first to review!</p>
-              </div>
-            )}
-          </motion.div>
         </motion.div>
         
-        {/* Related Products */}
         <motion.div 
           className="mt-12 md:mt-16"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2 }}
         >
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-10 text-gray-900">Related Products</h2>
+          <h2 className="text-2xl md:text-3xl font-thin tracking-widest uppercase text-center mb-8 md:mb-10 text-black">RELATED PRODUCTS</h2>
           <RelatedProduct category={product.category} currentProductId={product._id} />
         </motion.div>
       </div>
       
-      {/* Review Modal */}
       <AnimatePresence>
         {isReviewModalOpen && (
           <motion.div
@@ -786,14 +1335,14 @@ const SingleProductList = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="rounded-2xl shadow-xl w-full max-w-md p-6 bg-white border border-gray-200"
+              className="rounded-xl shadow-xl w-full max-w-md p-6 bg-white border border-gray-200"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-gray-900">Write a Review</h3>
+                <h3 className="text-xl font-light tracking-widest uppercase text-black">WRITE A REVIEW</h3>
                 <button 
                   onClick={() => setReviewModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700 text-xl"
+                  className="text-gray-500 hover:text-black text-xl"
                 >
                   &times;
                 </button>
@@ -801,18 +1350,18 @@ const SingleProductList = () => {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block mb-2 text-gray-700">Your Name</label>
+                  <label className="block mb-2 text-gray-700 font-light">YOUR NAME</label>
                   <input
                     type="text"
                     placeholder="Enter your name"
                     value={newReview.name}
                     onChange={(e) => setNewReview({ ...newReview, name: e.target.value })}
-                    className="w-full p-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 focus:outline-none focus:border-blue-500"
+                    className="w-full p-3 rounded-lg bg-gray-50 border border-gray-300 text-black focus:outline-none focus:border-black font-light"
                   />
                 </div>
                 
                 <div>
-                  <label className="block mb-2 text-gray-700">Your Rating</label>
+                  <label className="block mb-2 text-gray-700 font-light">YOUR RATING</label>
                   <div className="flex">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -831,32 +1380,32 @@ const SingleProductList = () => {
                 </div>
                 
                 <div>
-                  <label className="block mb-2 text-gray-700">Your Review</label>
+                  <label className="block mb-2 text-gray-700 font-light">YOUR REVIEW</label>
                   <textarea
                     placeholder="Share your experience with this product"
                     value={newReview.comment}
                     onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                    className="w-full p-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 focus:outline-none focus:border-blue-500 h-32"
+                    className="w-full p-3 rounded-lg bg-gray-50 border border-gray-300 text-black focus:outline-none focus:border-black font-light h-32"
                   ></textarea>
                 </div>
                 
                 <div className="flex space-x-3 pt-2">
                   <motion.button
                     onClick={handleAddReview}
-                    className="flex-1 py-3 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700"
+                    className="flex-1 py-3 rounded-lg font-light tracking-widest uppercase bg-black text-white hover:bg-gray-900"
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    Submit Review
+                    SUBMIT REVIEW
                   </motion.button>
                   
                   <motion.button
                     onClick={() => setReviewModalOpen(false)}
-                    className="flex-1 py-3 rounded-lg font-medium bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    className="flex-1 py-3 rounded-lg font-light tracking-widest uppercase bg-gray-200 text-black hover:bg-gray-300"
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    Cancel
+                    CANCEL
                   </motion.button>
                 </div>
               </div>
@@ -865,14 +1414,13 @@ const SingleProductList = () => {
         )}
       </AnimatePresence>
       
-      {/* Image Modal */}
       <AnimatePresence>
         {isImageModalOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-white bg-opacity-95 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
             onClick={() => setImageModalOpen(false)}
           >
             <motion.div
@@ -880,9 +1428,10 @@ const SingleProductList = () => {
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
               className="relative max-w-5xl w-full max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
             >
               <button 
-                className="absolute top-4 right-4 text-gray-700 text-3xl z-10 hover:text-gray-900 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+                className="absolute top-4 right-4 text-white text-3xl z-30 hover:text-gray-300 bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center"
                 onClick={() => setImageModalOpen(false)}
               >
                 &times;
@@ -891,7 +1440,7 @@ const SingleProductList = () => {
               <motion.img
                 key={currentImageIndex}
                 src={product.images[currentImageIndex]}
-                alt={`Product view ${currentImageIndex + 1}`}
+                alt={`${product.productName} - View ${currentImageIndex + 1}`}
                 className="w-full h-full object-contain max-h-[80vh]"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -900,25 +1449,25 @@ const SingleProductList = () => {
               />
               
               <button 
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-700 bg-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md text-xl"
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 w-10 h-10 rounded-full flex items-center justify-center hover:bg-opacity-70 z-30 text-xl"
                 onClick={(e) => { e.stopPropagation(); navigateImages('prev'); }}
               >
                 &lt;
               </button>
               
               <button 
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-700 bg-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md text-xl"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 w-10 h-10 rounded-full flex items-center justify-center hover:bg-opacity-70 z-30 text-xl"
                 onClick={(e) => { e.stopPropagation(); navigateImages('next'); }}
               >
                 &gt;
               </button>
               
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+              <div className="absolute bottom-4 left-0 right-0 flex justify-center z-30">
                 <div className="flex space-x-2">
                   {product.images.map((_, idx) => (
                     <button
                       key={idx}
-                      className={`w-3 h-3 rounded-full ${idx === currentImageIndex ? 'bg-blue-600' : 'bg-gray-300'}`}
+                      className={`w-3 h-3 rounded-full ${idx === currentImageIndex ? 'bg-white' : 'bg-gray-300'}`}
                       onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }}
                     />
                   ))}
@@ -932,7 +1481,7 @@ const SingleProductList = () => {
       <Footer />
       <ToastContainer 
         position="bottom-right" 
-        toastStyle={{ backgroundColor: "white", color: "#1f2937", border: "1px solid #e5e7eb" }} 
+        toastStyle={{ backgroundColor: "white", color: "#000", border: "1px solid #e5e7eb" }} 
       />
     </div>
   );

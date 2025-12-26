@@ -4,6 +4,9 @@ import HomeBanner from "../../Components/Crousels/HomeBanner";
 import FeaturedProduct from "../../Components/FeaturedProduct/FeaturedProduct";
 import Footer from "../../Components/Footer/Footer";
 import Navbar from "../../Components/Navigations/Navbar";
+import CampaignShowcase from "../AllProducts/CampaignShowcase";
+
+
 
 const HomePage = () => {
     return (
@@ -11,6 +14,7 @@ const HomePage = () => {
         <Navbar/>
         <HomeBanner/>
         <AllCategories/>
+        <CampaignShowcase/>
         <FeaturedProduct/>
         <BestSeller/>
         <Footer/>

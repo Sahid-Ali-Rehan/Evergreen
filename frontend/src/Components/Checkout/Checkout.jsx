@@ -9,7 +9,86 @@ import Footer from "../Footer/Footer";
 import { LockClosedIcon, CreditCardIcon, ShoppingBagIcon, XMarkIcon, TruckIcon } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
+// Replace with your actual publishable key
 const stripePromise = loadStripe("pk_test_51RSv6HQu2XY94ocpyNXlGLygbvTCIBSFrODrGTvAtAxnQQM0bFDNpC36pJ4EH9cb1GJEKSHigVz6xVWZFeHMZJSV001CPevlli");
+
+const allDistricts = [
+  "Dhaka", "Faridpur", "Gazipur", "Gopalganj", "Kishoreganj", "Madaripur", "Manikganj", "Munshiganj", 
+  "Narayanganj", "Narsingdi", "Rajbari", "Shariatpur", "Tangail", "Bandarban", "Brahmanbaria", "Chandpur", 
+  "Chittagong", "Comilla", "Cox's Bazar", "Feni", "Khagrachhari", "Lakshmipur", "Noakhali", "Rangamati", 
+  "Bagerhat", "Chuadanga", "Jashore", "Jhenaidah", "Khulna", "Kushtia", "Magura", "Meherpur", "Narail", 
+  "Satkhira", "Jamalpur", "Mymensingh", "Netrokona", "Sherpur", "Bogra", "Joypurhat", "Naogaon", "Natore", 
+  "Chapainawabganj", "Pabna", "Rajshahi", "Sirajganj", "Dinajpur", "Gaibandha", "Kurigram", "Lalmonirhat", 
+  "Nilphamari", "Panchagarh", "Rangpur", "Thakurgaon", "Habiganj", "Moulvibazar", "Sunamganj", "Sylhet",
+  "Barguna", "Barishal", "Bhola", "Jhalokati", "Patuakhali", "Pirojpur"
+];
+
+const districtUpazilas = {
+  "Dhaka": ["Dhamrai", "Dohar", "Keraniganj", "Nawabganj", "Savar"],
+  "Faridpur": ["Alfadanga", "Bhanga", "Boalmari", "Charbhadrasan", "Faridpur Sadar", "Madhukhali", "Nagarkanda", "Sadarpur", "Saltha"],
+  "Gazipur": ["Gazipur Sadar", "Kaliakair", "Kaliganj", "Kapasia", "Sreepur"],
+  "Gopalganj": ["Gopalganj Sadar", "Kashiani", "Kotalipara", "Muksudpur", "Tungipara"],
+  "Kishoreganj": ["Austagram", "Bajitpur", "Bhairab", "Hossainpur", "Itna", "Karimganj", "Katiadi", "Kishoreganj Sadar", "Kuliarchar", "Mithamain", "Nikli", "Pakundia", "Tarail"],
+  "Madaripur": ["Madaripur Sadar", "Kalkini", "Rajoir", "Shibchar"],
+  "Manikganj": ["Manikganj Sadar", "Singair", "Shibalaya", "Saturia", "Harirampur", "Ghior", "Daulatpur"],
+  "Munshiganj": ["Munshiganj Sadar", "Sreenagar", "Sirajdikhan", "Lohajang", "Gazaria", "Tongibari"],
+  "Narayanganj": ["Narayanganj Sadar", "Sonargaon", "Bandar", "Araihazar", "Rupganj"],
+  "Narsingdi": ["Narsingdi Sadar", "Belabo", "Monohardi", "Palash", "Raipura", "Shibpur"],
+  "Rajbari": ["Rajbari Sadar", "Baliakandi", "Goalandaghat", "Pangsha", "Kalukhali"],
+  "Shariatpur": ["Shariatpur Sadar", "Naria", "Zajira", "Gosairhat", "Bhedarganj", "Damudya"],
+  "Tangail": ["Tangail Sadar", "Sakhipur", "Basail", "Madhupur", "Ghatail", "Kalihati", "Nagarpur", "Mirzapur", "Gopalpur", "Delduar", "Bhuapur", "Dhanbari"],
+  "Bandarban": ["Bandarban Sadar", "Thanchi", "Lama", "Naikhongchhari", "Ali kadam", "Rowangchhari", "Ruma"],
+  "Brahmanbaria": ["Brahmanbaria Sadar", "Kasba", "Nasirnagar", "Sarail", "Ashuganj", "Akhaura", "Nabinagar", "Bancharampur", "Bijoynagar"],
+  "Chandpur": ["Chandpur Sadar", "Faridganj", "Haimchar", "Haziganj", "Kachua", "Matlab Dakshin", "Matlab Uttar", "Shahrasti"],
+  "Chittagong": ["Chittagong Sadar", "Anwara", "Banshkhali", "Boalkhali", "Chandanaish", "Fatikchhari", "Hathazari", "Lohagara", "Mirsharai", "Patiya", "Rangunia", "Raozan", "Sandwip", "Satkania", "Sitakunda"],
+  "Comilla": ["Comilla Sadar", "Barura", "Brahmanpara", "Burichang", "Chandina", "Chauddagram", "Daudkandi", "Debidwar", "Homna", "Laksam", "Monohorgonj", "Meghna", "Muradnagar", "Nangalkot", "Titas"],
+  "Cox's Bazar": ["Cox's Bazar Sadar", "Chakaria", "Kutubdia", "Maheshkhali", "Ramu", "Teknaf", "Ukhia", "Pekua"],
+  "Feni": ["Feni Sadar", "Chhagalnaiya", "Daganbhuiyan", "Parshuram", "Fulgazi", "Sonagazi"],
+  "Khagrachhari": ["Khagrachhari Sadar", "Dighinala", "Panchhari", "Laxmichhari", "Mohalchhari", "Ramgarh", "Manikchhari", "Matiranga"],
+  "Lakshmipur": ["Lakshmipur Sadar", "Raipur", "Ramganj", "Ramgati", "Kamalnagar"],
+  "Noakhali": ["Noakhali Sadar", "Begumganj", "Chatkhil", "Companiganj", "Hatiya", "Senbagh", "Sonaimuri", "Subarnachar", "Kabirhat"],
+  "Rangamati": ["Rangamati Sadar", "Belaichhari", "Bagaichhari", "Barkal", "Juraichhari", "Rajasthali", "Kaptai", "Langadu", "Nannerchar", "Kaukhali"],
+  "Bagerhat": ["Bagerhat Sadar", "Chitalmari", "Fakirhat", "Kachua", "Mollahat", "Mongla", "Morrelganj", "Rampal", "Sarankhola"],
+  "Chuadanga": ["Chuadanga Sadar", "Alamdanga", "Damurhuda", "Jibannagar"],
+  "Jashore": ["Jashore Sadar", "Abhaynagar", "Bagherpara", "Chaugachha", "Jhikargacha", "Keshabpur", "Manirampur", "Sharsha"],
+  "Jhenaidah": ["Jhenaidah Sadar", "Harinakunda", "Kaliganj", "Kotchandpur", "Maheshpur", "Shailkupa"],
+  "Khulna": ["Khulna Sadar", "Batiaghata", "Dacope", "Dumuria", "Dighalia", "Koyra", "Paikgacha", "Phultala", "Rupsa", "Terokhada"],
+  "Kushtia": ["Kushtia Sadar", "Bheramara", "Daulatpur", "Khoksa", "Kumarkhali", "Mirpur"],
+  "Magura": ["Magura Sadar", "Mohammadpur", "Shalikha", "Sreepur"],
+  "Meherpur": ["Meherpur Sadar", "Gangni", "Mujibnagar"],
+  "Narail": ["Narail Sadar", "Kalia", "Lohagara"],
+  "Satkhira": ["Satkhira Sadar", "Assasuni", "Debhata", "Kalaroa", "Kaliganj", "Satkhira Sadar", "Shyamnagar", "Tala"],
+  "Jamalpur": ["Jamalpur Sadar", "Baksiganj", "Dewanganj", "Islampur", "Madarganj", "Melandaha", "Sarishabari"],
+  "Mymensingh": ["Mymensingh Sadar", "Bhaluka", "Trishal", "Haluaghat", "Muktagacha", "Dhobaura", "Phulpur", "Gaffargaon", "Gauripur", "Ishwarganj", "Nandail", "Tarakanda"],
+  "Netrokona": ["Netrokona Sadar", "Atpara", "Barhatta", "Durgapur", "Khaliajuri", "Kalmakanda", "Kendua", "Madan", "Mohanganj", "Purbadhala"],
+  "Sherpur": ["Sherpur Sadar", "Jhenaigati", "Nakla", "Nalitabari", "Sreebardi"],
+  "Bogra": ["Bogra Sadar", "Adamdighi", "Bogura Sadar", "Dhunat", "Dhupchanchia", "Gabtali", "Kahaloo", "Nandigram", "Sariakandi", "Shajahanpur", "Sherpur", "Shibganj", "Sonatola"],
+  "Joypurhat": ["Joypurhat Sadar", "Akkelpur", "Kalai", "Khetlal", "Panchbibi"],
+  "Naogaon": ["Naogaon Sadar", "Atrai", "Badalgachi", "Dhamoirhat", "Manda", "Mahadevpur", "Niamatpur", "Patnitala", "Porsha", "Raninagar", "Sapahar"],
+  "Natore": ["Natore Sadar", "Bagatipara", "Baraigram", "Gurudaspur", "Lalpur", "Singra"],
+  "Chapainawabganj": ["Chapainawabganj Sadar", "Bholahat", "Gomastapur", "Nachole", "Shibganj"],
+  "Pabna": ["Pabna Sadar", "Atgharia", "Bera", "Bhangura", "Chatmohar", "Faridpur", "Ishwardi", "Santhia", "Sujanagar"],
+  "Rajshahi": ["Rajshahi Sadar", "Bagha", "Bagmara", "Charghat", "Durgapur", "Godagari", "Mohanpur", "Paba", "Puthia", "Tanore"],
+  "Sirajganj": ["Sirajganj Sadar", "Belkuchi", "Chauhali", "Kamarkhanda", "Kazipur", "Raiganj", "Shahjadpur", "Tarash", "Ullahpara"],
+  "Dinajpur": ["Dinajpur Sadar", "Biral", "Birganj", "Bochaganj", "Chirirbandar", "Phulbari", "Ghoraghat", "Hakimpur", "Kaharole", "Khansama", "Nawabganj", "Parbatipur"],
+  "Gaibandha": ["Gaibandha Sadar", "Fulchhari", "Gobindaganj", "Palashbari", "Sadullapur", "Saghata", "Sundarganj"],
+  "Kurigram": ["Kurigram Sadar", "Bhurungamari", "Char Rajibpur", "Chilmari", "Phulbari", "Nageshwari", "Rajarhat", "Raomari", "Ulipur"],
+  "Lalmonirhat": ["Lalmonirhat Sadar", "Aditmari", "Kaliganj", "Hatibandha", "Patgram"],
+  "Nilphamari": ["Nilphamari Sadar", "Dimla", "Domar", "Jaldhaka", "Kishoreganj", "Saidpur"],
+  "Panchagarh": ["Panchagarh Sadar", "Atwari", "Boda", "Debiganj", "Tetulia"],
+  "Rangpur": ["Rangpur Sadar", "Badarganj", "Gangachara", "Kaunia", "Rangpur Sadar", "Mithapukur", "Pirgachha", "Pirganj", "Taraganj"],
+  "Thakurgaon": ["Thakurgaon Sadar", "Baliadangi", "Haripur", "Pirganj", "Ranisankail"],
+  "Habiganj": ["Habiganj Sadar", "Ajmiriganj", "Baniachong", "Bahubal", "Chunarughat", "Lakhai", "Madhabpur", "Nabiganj"],
+  "Moulvibazar": ["Moulvibazar Sadar", "Barlekha", "Juri", "Kamalganj", "Kulaura", "Rajnagar", "Sreemangal"],
+  "Sunamganj": ["Sunamganj Sadar", "Bishwamvarpur", "Chhatak", "Derai", "Dharamapasha", "Dowarabazar", "Jagannathpur", "Jamalganj", "Sullah", "Tahirpur"],
+  "Sylhet": ["Sylhet Sadar", "Balaganj", "Beanibazar", "Bishwanath", "Companiganj", "Dakshin Surma", "Fenchuganj", "Golapganj", "Gowainghat", "Jaintiapur", "Kanaighat", "Osmani Nagar", "Zakiganj"],
+  "Barguna": ["Barguna Sadar", "Amtali", "Bamna", "Betagi", "Patharghata"],
+  "Barishal": ["Barishal Sadar", "Agailjhara", "Babuganj", "Bakerganj", "Banaripara", "Gaurnadi", "Hizla", "Mehendiganj", "Muladi", "Wazirpur"],
+  "Bhola": ["Bhola Sadar", "Burhanuddin", "Char Fasson", "Daulatkhan", "Lalmohan", "Manpura", "Tazumuddin"],
+  "Jhalokati": ["Jhalokati Sadar", "Kathalia", "Nalchity", "Rajapur"],
+  "Patuakhali": ["Patuakhali Sadar", "Bauphal", "Dashmina", "Galachipa", "Kalapara", "Mirzaganj", "Rangabali"],
+  "Pirojpur": ["Pirojpur Sadar", "Bhandaria", "Kawkhali", "Mathbaria", "Nazirpur", "Nesarabad", "Zianagar"]
+};
 
 const FloatingInput = ({ label, name, type = 'text', required = false, textarea = false, value, onChange }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -76,13 +155,69 @@ const FloatingInput = ({ label, name, type = 'text', required = false, textarea 
   );
 };
 
+const FloatingSelect = ({ label, name, required = false, value, onChange, options }) => {
+  const [isFocused, setIsFocused] = useState(false);
+
+  return (
+    <motion.div 
+      className="relative mb-8 group"
+      whileHover={{ y: -3 }}
+      transition={{ type: "spring", stiffness: 400 }}
+    >
+      <select
+        className="peer h-14 w-full rounded-xl border border-gray-300 px-6 py-2 focus:outline-none bg-transparent transition-all duration-300 shadow-sm appearance-none"
+        style={{ 
+          borderColor: isFocused ? '#000' : '#e5e7eb',
+          color: value ? '#000' : '#9ca3af',
+        }}
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+      >
+        <option value="" disabled>{label}</option>
+        {options && options.map((option, index) => (
+          <option key={index} value={option}>{option}</option>
+        ))}
+      </select>
+      <motion.label 
+        className={`absolute left-4 transition-all duration-300 px-2 ${
+          isFocused || value 
+            ? 'top-0 text-xs -translate-y-1/2 tracking-wider' 
+            : 'top-1/2 -translate-y-1/2'
+        }`}
+        style={{ 
+          backgroundColor: '#fff',
+          color: isFocused ? '#000' : '#9ca3af',
+          letterSpacing: '0.05em'
+        }}
+        animate={{ 
+          y: isFocused || value ? -10 : 0,
+          scale: isFocused || value ? 0.9 : 1
+        }}
+      >
+        {label}
+      </motion.label>
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </motion.div>
+  );
+};
+
 const CheckoutForm = () => {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [inDhaka, setInDhaka] = useState(false);
+  const [paymentIntentId, setPaymentIntentId] = useState(null);
+  const [clientSecret, setClientSecret] = useState(null);
+  
   const [userDetails, setUserDetails] = useState({
     name: "",
     phone: "",
@@ -94,22 +229,63 @@ const CheckoutForm = () => {
   });
 
   const cartItems = JSON.parse(localStorage.getItem('cart_guest')) || [];
-  // Calculate delivery charge based on Dhaka selection
-  const deliveryCharge = inDhaka ? 60 : 120;
-  const subtotal = cartItems.reduce((acc, item) => acc + item.quantity * item.price * (1 - item.discount / 100), 0);
+  const deliveryCharge = userDetails.jela === "Dhaka" ? 60 : 120;
+  const subtotal = cartItems.reduce((acc, item) => acc + item.quantity * item.price, 0);
   const totalPrice = subtotal + deliveryCharge;
 
-  
+  const upazilaOptions = userDetails.jela && districtUpazilas[userDetails.jela] 
+    ? districtUpazilas[userDetails.jela] 
+    : [];
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUserDetails(prev => ({ ...prev, [name]: value }));
+    
+    if (name === "jela") {
+      setUserDetails(prev => ({ 
+        ...prev, 
+        [name]: value,
+        upazela: "" 
+      }));
+    } else {
+      setUserDetails(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const createPaymentIntent = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/orders/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: totalPrice })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Payment initialization failed");
+      }
+
+      setClientSecret(data.clientSecret);
+      setPaymentIntentId(data.paymentIntentId);
+      return data;
+    } catch (error) {
+      toast.error(error.message || "Payment initialization failed");
+      throw error;
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (userDetails.paymentMethod === "Stripe") {
-      setShowPaymentModal(true);
+      try {
+        setProcessing(true);
+        await createPaymentIntent();
+        setShowPaymentModal(true);
+      } catch (error) {
+        console.error("Payment intent creation failed:", error);
+      } finally {
+        setProcessing(false);
+      }
       return;
     }
 
@@ -117,26 +293,16 @@ const CheckoutForm = () => {
   };
 
   const handlePayment = async () => {
+    if (!stripe || !elements || !clientSecret) {
+      toast.error("Payment system not ready. Please try again.");
+      return;
+    }
+
     try {
       setProcessing(true);
       
-      if (!stripe || !elements) {
-        throw new Error("Payment system not ready. Please try again.");
-      }
-
-      const paymentIntentResponse = await fetch("https://ruhana-adv.onrender.com/api/orders/create-payment-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: totalPrice })
-      });
-
-      const paymentData = await paymentIntentResponse.json();
-      if (!paymentIntentResponse.ok) {
-        throw new Error(paymentData.error || "Payment initialization failed");
-      }
-
-      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
-        paymentData.clientSecret, 
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret, 
         {
           payment_method: {
             card: elements.getElement(CardElement),
@@ -153,14 +319,19 @@ const CheckoutForm = () => {
         }
       );
 
-      if (stripeError) {
-        throw new Error(stripeError.message);
+      if (error) {
+        throw new Error(error.message);
       }
 
-      await submitOrder(paymentIntent.id);
-      setShowPaymentModal(false);
+      if (paymentIntent.status === "succeeded") {
+        await submitOrder(paymentIntent.id);
+        setShowPaymentModal(false);
+      } else {
+        throw new Error(`Payment status: ${paymentIntent.status}`);
+      }
     } catch (error) {
       toast.error(error.message || "Payment failed");
+    } finally {
       setProcessing(false);
     }
   };
@@ -172,12 +343,15 @@ const CheckoutForm = () => {
       const orderItems = cartItems.map(item => ({
         productId: item._id,
         productName: item.productName,
-        productImage: item.images[0],
+        productImage: item.images?.[0] || '',
         productDescription: item.productDescription,
         productCode: item.productCode,
         quantity: item.quantity,
         price: item.price,
-        discount: item.discount,
+        originalPrice: item.originalPrice,
+        productDiscount: item.productDiscount,
+        campaignDiscount: item.campaignDiscount,
+        isInCampaign: item.isInCampaign,
         selectedSize: item.selectedSize,
         selectedColor: item.selectedColor
       }));
@@ -189,26 +363,33 @@ const CheckoutForm = () => {
         status: "Pending",
         estimatedDeliveryDate: new Date(new Date().setDate(new Date().getDate() + 7)),
         ...userDetails,
-        paymentIntentId
+        upazela: userDetails.upazela || "Not Provided",
+        postalCode: userDetails.postalCode || "Not Provided",
+        paymentIntentId,
+        userId: null // Add user ID if you have authentication
       };
-
-      const response = await fetch("https://ruhana-adv.onrender.com/api/orders/checkout", {
+    
+      const response = await fetch("http://localhost:5000/api/orders/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(order),
       });
 
-      if (!response.ok) throw new Error("Order submission failed");
-      
       const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Order submission failed");
+      }
+      
       localStorage.setItem('orderSuccess', JSON.stringify(data.order));
-
       localStorage.removeItem('cart_guest');
+      
       toast.success("Order placed successfully!");
       navigate("/success");
 
     } catch (error) {
       toast.error(error.message || "Checkout failed");
+      console.error("Checkout error:", error);
     } finally {
       setProcessing(false);
     }
@@ -218,7 +399,6 @@ const CheckoutForm = () => {
     <div className="min-h-screen relative bg-white">
       <Navbar />
       
-      {/* Space below navbar */}
       <div className="h-16"></div>
 
       <AnimatePresence>
@@ -261,7 +441,10 @@ const CheckoutForm = () => {
               className="w-full max-w-md relative rounded-2xl p-8 shadow-2xl bg-white border border-gray-200"
             >
               <button
-                onClick={() => setShowPaymentModal(false)}
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setProcessing(false);
+                }}
                 className="absolute top-4 right-4 p-2 rounded-full hover:scale-110 transition-transform bg-gray-100"
               >
                 <XMarkIcon className="w-6 h-6 text-gray-800" />
@@ -285,7 +468,7 @@ const CheckoutForm = () => {
                 >
                   <CardElement
                     options={{
-                      hidePostalCode: true,
+                      hidePostalCode: false,
                       style: {
                         base: {
                           fontSize: '16px',
@@ -315,10 +498,7 @@ const CheckoutForm = () => {
                   whileTap={{ scale: 0.98 }}
                   onClick={handlePayment}
                   className="w-full py-4 rounded-xl font-medium text-lg bg-black text-white shadow-[0_4px_0_0_rgba(0,0,0,0.2)] hover:shadow-[0_6px_0_0_rgba(0,0,0,0.2)] active:shadow-[0_2px_0_0_rgba(0,0,0,0.2)] transition-all duration-200 flex items-center justify-center"
-                  disabled={processing}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
+                  disabled={processing || !stripe || !elements}
                 >
                   {processing ? (
                     <div className="flex items-center gap-2">
@@ -329,6 +509,12 @@ const CheckoutForm = () => {
                     `Pay ৳${totalPrice.toFixed(2)}`
                   )}
                 </motion.button>
+                
+                <p className="text-sm text-gray-600 text-center">
+                  Test Card: 4242 4242 4242 4242
+                  <br />
+                  Exp: Any future date | CVC: Any 3 digits
+                </p>
               </div>
             </motion.div>
           </motion.div>
@@ -343,7 +529,6 @@ const CheckoutForm = () => {
       >
         <LayoutGroup>
           <div className="flex flex-col lg:flex-row gap-12">
-            {/* Shipping Details */}
             <motion.div 
               className="lg:w-7/12 rounded-2xl p-8 bg-white border border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.02)]"
               layout
@@ -361,33 +546,42 @@ const CheckoutForm = () => {
                   <div className="grid gap-8 md:grid-cols-2">
                     <FloatingInput label="Full Name" name="name" required value={userDetails.name} onChange={handleInputChange} />
                     <FloatingInput label="Phone Number" name="phone" type="tel" required value={userDetails.phone} onChange={handleInputChange} />
-                    <FloatingInput label="District" name="jela" required value={userDetails.jela} onChange={handleInputChange} />
-                    <FloatingInput label="Upazila" name="upazela" required value={userDetails.upazela} onChange={handleInputChange} />
+                    
+                    <FloatingSelect 
+                      label="District" 
+                      name="jela" 
+                      required 
+                      value={userDetails.jela} 
+                      onChange={handleInputChange}
+                      options={allDistricts}
+                    />
+                    
+                    <FloatingSelect 
+                      label="Upazila" 
+                      name="upazela" 
+                      required={false}
+                      value={userDetails.upazela} 
+                      onChange={handleInputChange}
+                      options={upazilaOptions}
+                    />
+                    
                     <div className="md:col-span-2">
                       <FloatingInput label="Full Address" name="address" textarea required value={userDetails.address} onChange={handleInputChange} />
                     </div>
-                    <FloatingInput label="Postal Code" name="postalCode" value={userDetails.postalCode} onChange={handleInputChange} />
+                    <FloatingInput label="Postal Code" name="postalCode" value={userDetails.postalCode} onChange={handleInputChange} required={false} />
                   </div>
                 </motion.div>
 
-                {/* Dhaka Delivery Toggle */}
-      <motion.div layout className="flex items-center gap-4">
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="inDhaka"
-            checked={inDhaka}
-            onChange={(e) => setInDhaka(e.target.checked)}
-            className="h-5 w-5 rounded border-gray-300 text-black focus:ring-black"
-          />
-          <label htmlFor="inDhaka" className="ml-3 text-gray-700">
-            Inside Dhaka
-          </label>
-        </div>
-        <span className="text-sm text-gray-500">
-          {inDhaka ? "Delivery: ৳60" : "Delivery: ৳120"}
-        </span>
-      </motion.div>
+                <motion.div layout className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                  <p className="text-lg font-medium text-gray-900">
+                    Delivery Charge: ৳{deliveryCharge.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {userDetails.jela === "Dhaka" 
+                      ? "Inside Dhaka delivery charge is ৳60" 
+                      : "Outside Dhaka delivery charge is ৳120"}
+                  </p>
+                </motion.div>
 
                 <motion.div layout>
                   <motion.h2 
@@ -437,7 +631,6 @@ const CheckoutForm = () => {
               </form>
             </motion.div>
 
-            {/* Order Summary */}
             <motion.div 
               className="lg:w-5/12"
               layout
@@ -469,7 +662,7 @@ const CheckoutForm = () => {
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white opacity-10"></div>
                         <motion.img 
-                          src={item.images[0]} 
+                          src={item.images?.[0] || ''} 
                           alt={item.productName}
                           className="w-20 h-20 rounded-lg object-cover border border-gray-200 shadow-sm flex-shrink-0"
                           whileHover={{ rotate: 2 }}
@@ -487,7 +680,7 @@ const CheckoutForm = () => {
                               </span>
                             </div>
                             <span className="font-medium text-gray-900">
-                              ৳{(item.price * item.quantity).toFixed(2)}
+                              ৳{(item.quantity * item.price).toFixed(2)}
                             </span>
                           </div>
                         </div>

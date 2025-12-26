@@ -19,14 +19,18 @@ import Success from "./Components/Message/Success";
 import AllOrders from "./Components/AdminComponents/AllOrders";
 import MyProfile from "./Components/MyProfile/MyProfile";
 import Wishlist from "./Components/Wishlist/Wishlist";
+import CampaignManager from './Components/AdminComponents/CampaignManager';
+
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import NotFoundPage from "./Components/NotFound/404";
+import { HelmetProvider } from 'react-helmet-async';
 
 const stripePromise = loadStripe('pk_test_51RSv6HQu2XY94ocpyNXlGLygbvTCIBSFrODrGTvAtAxnQQM0bFDNpC36pJ4EH9cb1GJEKSHigVz6xVWZFeHMZJSV001CPevlli');
+
 function App() {
   return (
-    <>
+    <HelmetProvider>
       <ToastContainer />
       <BrowserRouter>
         <Routes>
@@ -34,28 +38,27 @@ function App() {
           <Route path="/login" element={<LoginForm />} />
           <Route path="/signup" element={<SignupForm />} />
           <Route path="/products" element={<AllProductsClient />} />
+          
+          {/* OLD ROUTE - Keep for backward compatibility */}
           <Route path="/products/single/:id" element={<SingleProductList />}/>
+          
+          {/* NEW SEO-FRIENDLY ROUTE */}
+          <Route path="/product/:slug" element={<SingleProductList />}/>
+          
           <Route path="/cart" element={<Cart />} />
           <Route path="/logout" element={<Logout />} />
           
-<Route 
-  path="/checkout" 
-  element={
-    
-      <Elements stripe={stripePromise}>
-        <Checkout />
-      </Elements>
-   
-  }
-/>
+          <Route 
+            path="/checkout" 
+            element={
+              <Elements stripe={stripePromise}>
+                <Checkout />
+              </Elements>
+            }
+          />
           <Route path="/success" element={<Success />} />
           <Route path="/my-profile" element={<MyProfile />} />
           <Route path="/wish-list" element={<Wishlist/>} />
-
-
-
-
-
 
           <Route
             path="/admin"
@@ -105,12 +108,18 @@ function App() {
               </PrivateRoute>
             }
           />
-        <Route path="*" element={<NotFoundPage />} />
-
+             <Route
+  path="/admin/campaigns"
+  element={
+    <PrivateRoute role="admin">
+      <CampaignManager />
+    </PrivateRoute>
+  }
+/>
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
-
       </BrowserRouter>
-    </>
+    </HelmetProvider>
   );
 }
 

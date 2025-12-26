@@ -55,7 +55,7 @@ const MyProfile = () => {
         }
 
         const response = await axios.get(
-          `https://ruhana-adv.onrender.com/api/users/${userId}`,
+          `http://localhost:5000/api/users/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -171,7 +171,7 @@ const MyProfile = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `https://ruhana-adv.onrender.com/api/orders/${orderIdToTrack}`,
+        `http://localhost:5000/api/orders/${orderIdToTrack}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -220,7 +220,7 @@ const MyProfile = () => {
       }
 
       const response = await axios.put(
-        `https://ruhana-adv.onrender.com/api/orders/request-cancel/${order._id}`,
+        `http://localhost:5000/api/orders/request-cancel/${order._id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -43,11 +43,41 @@ const EditProduct = () => {
   const [fileInputs, setFileInputs] = useState([null]);
   const [uploadProgress, setUploadProgress] = useState({});
   const [loading, setLoading] = useState(true);
-  
+  const [discountedPrice, setDiscountedPrice] = useState(0);
+
   // Categories state
   const [categories, setCategories] = useState({});
   const [categoryLabels, setCategoryLabels] = useState({});
   const [loadingCategories, setLoadingCategories] = useState(true);
+
+
+  // Add this useEffect for discount calculation
+  useEffect(() => {
+    const calculatedDiscountedPrice =
+      formData.price - (formData.price * formData.discount) / 100;
+    setDiscountedPrice(calculatedDiscountedPrice);
+  }, [formData.price, formData.discount]);
+
+  // Add discounted price handler
+  const handleDiscountedPriceChange = (e) => {
+    const newDiscountedPrice = parseFloat(e.target.value);
+
+    if (!isNaN(newDiscountedPrice) && formData.price > 0) {
+      setDiscountedPrice(newDiscountedPrice);
+
+      // Calculate new discount percentage
+      const newDiscount = 100 - (newDiscountedPrice / formData.price) * 100;
+
+      setFormData({
+        ...formData,
+        discount: Math.max(
+          0,
+          Math.min(100, parseFloat(newDiscount.toFixed(2)))
+        ),
+      });
+    }
+  };
+
 
   useEffect(() => {
     if (productId) {
@@ -60,7 +90,7 @@ const EditProduct = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `https://ruhana-adv.onrender.com/api/products/details/${productId}`,
+        `http://localhost:5000/api/products/details/${productId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -92,7 +122,7 @@ const EditProduct = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        'https://ruhana-adv.onrender.com/api/categories', 
+        'http://localhost:5000/api/categories', 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -118,7 +148,7 @@ const EditProduct = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'https://ruhana-adv.onrender.com/api/products/upload',
+        'http://localhost:5000/api/products/upload',
         formData,
         {
           headers: {
@@ -171,7 +201,7 @@ const EditProduct = () => {
         
         const token = localStorage.getItem('token');
         const response = await axios.post(
-          'https://ruhana-adv.onrender.com/api/products/upload',
+          'http://localhost:5000/api/products/upload',
           formData,
           {
             headers: {
@@ -251,7 +281,7 @@ const EditProduct = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `https://ruhana-adv.onrender.com/api/products/update/${productId}`,
+        `http://localhost:5000/api/products/update/${productId}`,
         payload,
         {
           headers: { 
@@ -390,50 +420,74 @@ const EditProduct = () => {
             </motion.div>
             
             {/* Price and Discount */}
-            <motion.div 
-              className="grid grid-cols-2 gap-6 md:col-span-2"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.45 }}
-            >
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: COLORS.text }}>
-                  Price (TK)
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  placeholder="Product price"
-                  value={formData.price}
-                  onChange={handleChange}
-                  className="w-full p-3 rounded-lg border bg-white placeholder-gray-400 focus:outline-none focus:ring-1"
-                  style={{ 
-                    borderColor: COLORS.border, 
-                    color: COLORS.text,
-                  }}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: COLORS.text }}>
-                  Discount (%)
-                </label>
-                <input
-                  type="number"
-                  name="discount"
-                  placeholder="Discount percentage"
-                  value={formData.discount}
-                  onChange={handleChange}
-                  className="w-full p-3 rounded-lg border bg-white placeholder-gray-400 focus:outline-none focus:ring-1"
-                  style={{ 
-                    borderColor: COLORS.border, 
-                    color: COLORS.text,
-                  }}
-                  required
-                />
-              </div>
-            </motion.div>
+            {/* Price and Discount section */}
+      <motion.div 
+        className="grid grid-cols-2 gap-6 md:col-span-2"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, delay: 0.45 }}
+      >
+        <div>
+          <label className="block text-sm font-medium mb-1" style={{ color: COLORS.text }}>
+            Price (TK)
+          </label>
+          <input
+            type="number"
+            name="price"
+            placeholder="Product price"
+            value={formData.price}
+            onChange={handleChange}
+            className="w-full p-3 rounded-lg border bg-white placeholder-gray-400 focus:outline-none focus:ring-1"
+            style={{ 
+              borderColor: COLORS.border, 
+              color: COLORS.text,
+            }}
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-1" style={{ color: COLORS.text }}>
+            Discount (%)
+          </label>
+          <input
+            type="number"
+            name="discount"
+            placeholder="Discount percentage"
+            value={formData.discount}
+            onChange={handleChange}
+            className="w-full p-3 rounded-lg border bg-white placeholder-gray-400 focus:outline-none focus:ring-1"
+            style={{ 
+              borderColor: COLORS.border, 
+              color: COLORS.text,
+            }}
+            required
+          />
+        </div>
+      </motion.div>
+      
+      {/* Add this discounted price input field */}
+      <motion.div 
+        className="mt-4 md:col-span-2"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, delay: 0.5 }}
+      >
+        <label className="block text-sm font-medium mb-1" style={{ color: COLORS.text }}>
+          Discounted Price (TK)
+        </label>
+        <input
+          type="number"
+          value={Math.round(discountedPrice)}
+          onChange={handleDiscountedPriceChange}
+          className="w-full p-3 rounded-lg border bg-white placeholder-gray-400 focus:outline-none focus:ring-1"
+          style={{ 
+            borderColor: COLORS.border, 
+            color: COLORS.text,
+          }}
+        />
+      </motion.div>
+
             
             {/* Discounted Price */}
             <motion.div 

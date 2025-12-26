@@ -94,7 +94,8 @@ const AllOrders = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedOrders, setSelectedOrders] = useState([]);
-  
+  const [isSending, setIsSending] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -107,7 +108,7 @@ const AllOrders = () => {
 
         // Fetch orders
         const ordersResponse = await axios.get(
-          "https://ruhana-adv.onrender.com/api/orders/all-orders",
+          "http://localhost:5000/api/orders/all-orders",
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
@@ -180,7 +181,7 @@ const AllOrders = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `https://ruhana-adv.onrender.com/api/orders/update-status/${orderId}`,
+        `http://localhost:5000/api/orders/update-status/${orderId}`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -305,7 +306,7 @@ const AllOrders = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.delete(
-        `https://ruhana-adv.onrender.com/api/orders/cancel/${orderId}`,
+        `http://localhost:5000/api/orders/cancel/${orderId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Order cancelled");
@@ -325,7 +326,7 @@ const AllOrders = () => {
       const token = localStorage.getItem("token");
       await Promise.all(selectedOrders.map(orderId => 
         axios.delete(
-          `https://ruhana-adv.onrender.com/api/orders/cancel/${orderId}`,
+          `http://localhost:5000/api/orders/cancel/${orderId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
       ));
@@ -676,7 +677,61 @@ const generateInvoiceDocument = (order) => {
     
     e.target.parentNode.replaceChild(placeholder, e.target);
   };
+// Add this function inside the component
+// Updated handleSentToParcel function
+const handleSentToParcel = async (order) => {
+   if (isSending) return;
+  setIsSending(true);
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Authentication required");
+      return;
+    }
 
+    // Prepare payload in Steadfast's required format
+    const payload = {
+      invoice: order.sequentialNumber.toString(),
+      recipient_name: order.name,
+      recipient_phone: order.phone,
+      recipient_address: `${order.address}, ${order.upazela}, ${order.jela}`,
+      cod_amount: order.paymentMethod === "COD" ? order.totalAmount : 0,
+      note: `Order contains ${order.items.length} items`,
+      merchant_id: "1258884",
+      // New required fields based on Steadfast documentation
+      package_name: `Order ${order.sequentialNumber}`,
+      product_price: order.totalAmount,
+      delivery_type: "inside", // or "outside" based on your needs
+      weight: "1", // default weight
+    };
+
+    // Make API request to Steadfast
+    const response = await axios.post(
+      "https://portal.steadfast.com.bd/api/v1/create_order",
+      payload,
+      {
+        headers: {
+          "Api-Key": "uoxmeu4ha5xknlkky0inzh9mde6zqzwp",
+          "Secret-Key": "y7tlmetwzpth9uchdcskin3h",
+          "Content-Type": "application/json",
+        }
+      }
+    );
+
+    if (response.data.status === 200 || response.data.success) {
+      toast.success(`Parcel created! Tracking ID: ${response.data.tracking_id}`);
+      // Update order status to shipped
+      await updateStatus(order._id, "Shipped");
+    } else {
+      throw new Error(response.data.message || "Failed to create parcel");
+    }
+  } catch (error) {
+    console.error("Steadfast API error:", error.response?.data || error.message);
+    toast.error(`Steadfast API error: ${error.response?.data?.message || error.message}`);
+  }finally {
+    setIsSending(false);
+  }
+};
   return (
     <div 
       className="min-h-screen p-4 md:p-8 relative"
@@ -1135,6 +1190,28 @@ const generateInvoiceDocument = (order) => {
                             <FaDownload className="w-4 h-4" />
                             <span>Download</span>
                           </motion.button>
+
+   {/* // Then update your button */}
+{order.status !== "Shipped" && order.status !== "Delivered" && (
+  <motion.button
+    onClick={() => !isSending && handleSentToParcel(order)}
+    className="px-4 py-2 rounded-lg flex items-center gap-1.5 font-medium text-sm"
+    style={{ 
+      backgroundColor: COLORS.primary, 
+      color: 'white',
+      opacity: isSending ? 0.7 : 1
+    }}
+    whileHover={{ 
+      scale: isSending ? 1 : 1.03,
+      boxShadow: isSending ? "none" : "0 4px 12px rgba(0,0,0,0.1)"
+    }}
+    whileTap={{ scale: isSending ? 1 : 0.98 }}
+    disabled={isSending}
+  >
+    <FaTruck className="w-4 h-4" />
+    <span>{isSending ? "Processing..." : "Sent to parcel"}</span>
+  </motion.button>
+)}
                           
                           {/* New button to open invoice in new tab */}
                           <motion.button

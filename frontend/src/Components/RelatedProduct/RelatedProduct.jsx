@@ -15,7 +15,7 @@ const RelatedProducts = ({ category }) => {
       try {
         setLoading(true);
         const response = await fetch(
-          `https://ruhana-adv.onrender.com/api/products/related/${category}`
+          `http://localhost:5000/api/products/related/${category}`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch related products");

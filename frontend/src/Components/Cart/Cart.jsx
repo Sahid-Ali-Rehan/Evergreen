@@ -12,15 +12,14 @@ const Cart = () => {
 
   useEffect(() => {
     const storedCart = JSON.parse(localStorage.getItem('cart_guest')) || [];
-    const updatedCart = storedCart.map(item => ({
-      ...item,
-      productId: item.productId || item._id,
-    }));
     
-    setCartItems(updatedCart);
-    const total = updatedCart.reduce((acc, item) => 
-      acc + item.quantity * item.price * (1 - item.discount / 100), 0
-    );
+    setCartItems(storedCart);
+    
+    const total = storedCart.reduce((acc, item) => {
+      const itemTotal = item.quantity * item.price;
+      return acc + itemTotal;
+    }, 0);
+    
     setTotalPrice(total);
   }, []);
 
@@ -50,7 +49,7 @@ const Cart = () => {
     localStorage.setItem('cart_guest', JSON.stringify(updatedCartItems));
     
     const total = updatedCartItems.reduce((acc, item) => 
-      acc + item.quantity * item.price * (1 - item.discount / 100), 0
+      acc + item.quantity * item.price, 0
     );
     setTotalPrice(total);
   };
@@ -69,7 +68,7 @@ const Cart = () => {
       localStorage.setItem('cart_guest', JSON.stringify(updatedCartItems));
       
       const total = updatedCartItems.reduce((acc, item) => 
-        acc + item.quantity * item.price * (1 - item.discount / 100), 0
+        acc + item.quantity * item.price, 0
       );
       setTotalPrice(total);
       toast.success("Item removed from cart");
@@ -77,7 +76,6 @@ const Cart = () => {
     }, 300);
   };
 
-  // Animation variants
   const itemVariants = {
     hidden: { opacity: 0, y: -20 },
     visible: (index) => ({
@@ -179,86 +177,113 @@ const Cart = () => {
             <div className="rounded-xl p-8 bg-gradient-to-br from-white to-gray-50 border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
               <div className="space-y-8">
                 <AnimatePresence mode="popLayout">
-                  {cartItems.map((item, index) => (
-                    <motion.div
-                      key={item._id + item.selectedSize + item.selectedColor}
-                      className="flex flex-col md:flex-row justify-between items-center pb-8 border-b border-gray-100"
-                      variants={itemVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      custom={index}
-                      layout
-                    >
-                      <div className="flex items-center w-full md:w-auto mb-4 md:mb-0">
-                        <div className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-lg"></div>
-                          <img 
-                            src={item.images[0]} 
-                            alt={item.productName} 
-                            className="w-24 h-24 object-cover rounded-lg relative z-10 border border-gray-100"
-                          />
-                          {item.discount > 0 && (
-                            <div className="absolute top-0 right-0 z-20 -mt-2 -mr-2 bg-black text-white text-xs font-medium rounded-full w-8 h-8 flex items-center justify-center shadow-lg">
-                              {item.discount}%
+                  {cartItems.map((item, index) => {
+                    const totalDiscount = item.productDiscount + (item.isInCampaign ? item.campaignDiscount : 0);
+                    
+                    return (
+                      <motion.div
+                        key={item._id + item.selectedSize + item.selectedColor}
+                        className="flex flex-col md:flex-row justify-between items-center pb-8 border-b border-gray-100"
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        custom={index}
+                        layout
+                      >
+                        <div className="flex items-center w-full md:w-auto mb-4 md:mb-0">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-lg"></div>
+                            <img 
+                              src={item.images[0]} 
+                              alt={item.productName} 
+                              className="w-24 h-24 object-cover rounded-lg relative z-10 border border-gray-100"
+                            />
+                            {totalDiscount > 0 && (
+                              <div className="absolute top-0 right-0 z-20 -mt-2 -mr-2 bg-black text-white text-xs font-medium rounded-full w-8 h-8 flex items-center justify-center shadow-lg">
+                                {totalDiscount}%
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-6">
+                            <p className="font-medium text-gray-900">{item.productName}</p>
+                            <p className="text-sm text-gray-500 mt-1">Size: {item.selectedSize}</p>
+                            <p className="text-sm text-gray-500">Color: {item.selectedColor}</p>
+                            
+                            <div className="mt-2">
+                              <p className="font-medium text-gray-900 text-lg">
+                                ৳{item.price.toFixed(2)}
+                              </p>
+                              {item.originalPrice > item.price && (
+                                <p className="text-sm text-gray-500 line-through">
+                                  ৳{item.originalPrice.toFixed(2)}
+                                </p>
+                              )}
                             </div>
-                          )}
+                            
+                            {(item.productDiscount > 0 || item.campaignDiscount > 0) && (
+                              <div className="mt-1 text-xs">
+                                {item.productDiscount > 0 && (
+                                  <span className="text-blue-600 mr-2">
+                                    -{item.productDiscount}%
+                                  </span>
+                                )}
+                                {item.isInCampaign && item.campaignDiscount > 0 && (
+                                  <span className="text-red-600">
+                                    -{item.campaignDiscount}% Campaign
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="ml-6">
-                          <p className="font-medium text-gray-900">{item.productName}</p>
-                          <p className="text-sm text-gray-500 mt-1">Size: {item.selectedSize}</p>
-                          <p className="text-sm text-gray-500">Color: {item.selectedColor}</p>
-                          <p className="font-medium mt-2 text-gray-900">
-                            ৳{(item.price * (1 - item.discount / 100)).toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
 
-                      <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 w-full md:w-auto">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 w-full md:w-auto">
+                          <div className="flex items-center space-x-2">
+                            <motion.button
+                              onClick={() => handleQuantityChange(item, -1)}
+                              className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700"
+                              whileHover={{ 
+                                backgroundColor: "#f9fafb",
+                                scale: 1.05
+                              }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              -
+                            </motion.button>
+                            <span className="text-lg font-medium min-w-[30px] text-center text-gray-900">
+                              {item.quantity}
+                            </span>
+                            <motion.button
+                              onClick={() => handleQuantityChange(item, 1)}
+                              className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700"
+                              whileHover={{ 
+                                backgroundColor: "#f9fafb",
+                                scale: 1.05
+                              }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              +
+                            </motion.button>
+                          </div>
+                          <p className="text-lg font-medium text-gray-900">
+                            ৳ {(item.quantity * item.price).toFixed(2)}
+                          </p>
                           <motion.button
-                            onClick={() => handleQuantityChange(item, -1)}
-                            className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700"
+                            onClick={() => handleRemoveItem(item)}
+                            className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
                             whileHover={{ 
-                              backgroundColor: "#f9fafb",
-                              scale: 1.05
+                              scale: 1.02,
+                              backgroundColor: "#f9fafb"
                             }}
-                            whileTap={{ scale: 0.95 }}
+                            whileTap={{ scale: 0.98 }}
                           >
-                            -
-                          </motion.button>
-                          <span className="text-lg font-medium min-w-[30px] text-center text-gray-900">
-                            {item.quantity}
-                          </span>
-                          <motion.button
-                            onClick={() => handleQuantityChange(item, 1)}
-                            className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700"
-                            whileHover={{ 
-                              backgroundColor: "#f9fafb",
-                              scale: 1.05
-                            }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            +
+                            Remove
                           </motion.button>
                         </div>
-                        <p className="text-lg font-medium text-gray-900">
-                          ৳ {(item.quantity * item.price * (1 - item.discount / 100)).toFixed(2)}
-                        </p>
-                        <motion.button
-                          onClick={() => handleRemoveItem(item)}
-                          className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
-                          whileHover={{ 
-                            scale: 1.02,
-                            backgroundColor: "#f9fafb"
-                          }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          Remove
-                        </motion.button>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </div>
             </div>

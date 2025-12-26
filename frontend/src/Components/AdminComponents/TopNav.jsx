@@ -8,7 +8,8 @@ import {
   FaBell, 
   FaSearch, 
   FaUserCircle,
-  FaCog
+  FaCog,
+  FaTag
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { COLORS, FONTS } from '../../constants';
@@ -52,7 +53,8 @@ const TopNav = ({
               { path: "/admin/products", label: "Products", icon: <FaBox /> },
               { path: "/admin/orders", label: "Orders", icon: <FaShoppingCart /> },
               { path: "/admin/users", label: "Users", icon: <FaUsers /> },
-              { path: "/admin/settings", label: "Settings", icon: <FaCog /> }
+              { path: "/admin/settings", label: "Settings", icon: <FaCog /> },
+              { path: "/admin/campaigns", label: "Campaigns", icon: <FaTag /> },
             ].map((item, index) => (
               <motion.a 
                 key={index}

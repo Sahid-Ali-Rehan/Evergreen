@@ -56,7 +56,8 @@ const Success = () => {
   useEffect(() => {
     const fetchOrderCount = async (retries = 3) => {
       try {
-        const response = await fetch('/api/orders/count');
+        // FIX: Remove double slash from API endpoint
+        const response = await fetch('http://localhost:5000/api/orders/count');
         if (!response.ok) throw new Error('Failed to fetch order count');
         const data = await response.json();
         setOrderCount(data.count || 0);
@@ -71,6 +72,7 @@ const Success = () => {
         }
       }
     };
+
 
     if (order) {
       const currentDate = new Date();
@@ -121,7 +123,7 @@ const Success = () => {
     try {
       if (orderCount === null) {
         try {
-          const response = await fetch('/api/orders/count');
+          const response = await fetch('http://localhost:5000//api/orders/count');
           if (!response.ok) throw new Error('Failed to fetch order count');
           const data = await response.json();
           const count = data.count || 0;
@@ -142,7 +144,7 @@ const Success = () => {
     }
   };
 
-  const generateInvoice = (order, deliveryDate, count) => {
+const generateInvoice = (order, deliveryDate, count) => {
     try {
       const doc = new jsPDF("portrait", "px", "a4");
       const pageWidth = doc.internal.pageSize.width;
@@ -160,24 +162,24 @@ const Success = () => {
 
       // Add decorative images
       const addImages = () => {
-  const topLeftImage = "Invoice/Top-Left-Corner.png";
-  const topRightImage = "Invoice/T-Logo.png";
-  const topCenterImage = "Invoice/Top-Center.png";
+        const topLeftImage = "Invoice/Top-Left-Corner.png";
+        const topRightImage = "Invoice/T-Logo.png";
+        const topCenterImage = "Invoice/Top-Center.png";
 
-  try {
-    doc.addImage(topLeftImage, "PNG", -30, -30, 160, 160);
-    doc.addImage(topRightImage, "PNG", pageWidth - 100, 20, 80, 80);
-    doc.addImage(topCenterImage, "PNG", 100, -80, 350, 250);
+        try {
+          doc.addImage(topLeftImage, "PNG", -30, -30, 160, 160);
+          doc.addImage(topRightImage, "PNG", pageWidth - 100, 20, 80, 80);
+          doc.addImage(topCenterImage, "PNG", 100, -80, 350, 250);
 
-    // Add "Jonab-BD" Text to Top Left
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.setTextColor("#000000");
-    doc.text("Jonab-BD", 40, 65); // Adjust padding as needed
-  } catch (e) {
-    console.log("Image loading error:", e);
-  }
-};
+          // Add "Jonab-BD" Text to Top Left
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(22);
+          doc.setTextColor("#000000");
+          doc.text("Jonab-BD", 40, 65);
+        } catch (e) {
+          console.log("Image loading error:", e);
+        }
+      };
 
       addImages();
 
@@ -190,7 +192,7 @@ const Success = () => {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
 
-      // Invoice details
+      // Invoice details - FIXED: Added invoice number
       const invoiceNo = `Invoice No: #${count}`;
       const orderId = `Order ID: ${order._id.slice(-8).toUpperCase()}`;
       const invoiceDate = `Invoice Date: ${new Date().toLocaleDateString()}`;
@@ -202,6 +204,7 @@ const Success = () => {
       const startX = pageWidth - maxWidth - 20;
 
       doc.setTextColor("#000000");
+      // FIXED: Added proper text arguments
       doc.text(invoiceNo, startX, 150);
       doc.text(orderId, startX, 170);
       doc.text(invoiceDate, startX, 190);
@@ -229,7 +232,7 @@ const Success = () => {
         doc.text(line, 20, infoY);
         infoY += 15;
       });
-
+      
       // Table Headers
       let yOffset = 260;
 

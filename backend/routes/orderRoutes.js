@@ -9,23 +9,29 @@ router.post('/create-payment-intent', async (req, res) => {
   try {
     const { amount } = req.body;
     
-// In backend order routes (create-payment-intent endpoint)
-// Change this in your /create-payment-intent endpoint
-const paymentIntent = await stripe.paymentIntents.create({
-  amount: Math.round(amount * 100),
-  currency: 'bdt', // Stripe doesn't support BDT for payment intents
-  payment_method_types: ['card'],
-  metadata: { integration_check: 'accept_a_payment' }
-});
-    res.status(200).json({ clientSecret: paymentIntent.client_secret });
+    const amountInCents = Math.round(amount * 100);
+    
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountInCents,
+      currency: 'usd',
+      payment_method_types: ['card'],
+      metadata: { 
+        integration_check: 'accept_a_payment',
+        amount_in_bdt: amount
+      }
+    });
+    
+    res.status(200).json({ 
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id 
+    });
   } catch (error) {
     console.error('Stripe Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Add this after your existing routes
-router.post('/stripe-webhook', async (req, res) => {
+router.post('/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -38,11 +44,9 @@ router.post('/stripe-webhook', async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle the event
   switch (event.type) {
     case 'payment_intent.succeeded':
       const paymentIntent = event.data.object;
-      // Update your order status here
       await Order.updateOne(
         { paymentIntentId: paymentIntent.id },
         { $set: { status: 'PaymentSucceeded' } }
@@ -55,7 +59,6 @@ router.post('/stripe-webhook', async (req, res) => {
         { $set: { status: 'PaymentFailed' } }
       );
       break;
-    // Add other event types as needed
     default:
       console.log(`Unhandled event type ${event.type}`);
   }
@@ -63,7 +66,7 @@ router.post('/stripe-webhook', async (req, res) => {
   res.json({ received: true });
 });
 
-// Modified checkout route
+// CHECKOUT ROUTE - FIXED
 router.post("/checkout", async (req, res) => {
   try {
     const { 
@@ -75,14 +78,18 @@ router.post("/checkout", async (req, res) => {
       name,
       phone,
       jela,
-      upazela,
+      upazela,  // THIS WAS COMMENTED OUT - NOW IT'S DEFINED!
       address,
       paymentMethod,
       paymentIntentId,
+      userId,
+      postalCode
     } = req.body;
 
-    // Validate required fields
-    const requiredFields = ['items', 'deliveryCharge', 'totalAmount', 'name', 'phone', 'jela', 'upazela', 'address', 'paymentMethod'];
+    console.log('Received checkout request:', { name, phone, jela, upazela, address });
+
+    // Validate required fields - upazela is NOT required here
+    const requiredFields = ['items', 'deliveryCharge', 'totalAmount', 'name', 'phone', 'jela', 'address', 'paymentMethod'];
     for (const field of requiredFields) {
       if (!req.body[field]) {
         return res.status(400).json({ error: `${field} is required` });
@@ -95,9 +102,14 @@ router.post("/checkout", async (req, res) => {
         return res.status(400).json({ error: "Payment intent ID required for Stripe payments" });
       }
       
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-      if (paymentIntent.status !== "succeeded") {
-        return res.status(400).json({ error: "Payment not completed" });
+      try {
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (paymentIntent.status !== "succeeded") {
+          return res.status(400).json({ error: "Payment not completed. Status: " + paymentIntent.status });
+        }
+      } catch (stripeError) {
+        console.error('Stripe validation error:', stripeError);
+        return res.status(400).json({ error: "Invalid payment intent" });
       }
     }
 
@@ -113,166 +125,124 @@ router.post("/checkout", async (req, res) => {
         });
       }
 
-      // Store product image
-      item.productImage = product.images[0]; // Add this line
+      if (product.images && product.images.length > 0) {
+        item.productImage = product.images[0];
+      } else {
+        item.productImage = '';
+      }
 
       product.stock -= item.quantity;
       await product.save();
     }
 
-    // Create order
+    // Create order - NOW upazela is defined!
     const order = new Order({
+      userId: userId || null,
       items,
       deliveryCharge,
       totalAmount,
-      status,
-      estimatedDeliveryDate,
+      status: paymentMethod === "Stripe" ? "Processing" : status,
+      estimatedDeliveryDate: estimatedDeliveryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       name,
       phone,
       jela,
-      upazela,
+      upazela: upazela || "Not Provided",  // Now this variable EXISTS!
       address,
       paymentMethod,
       paymentIntentId: paymentMethod === "Stripe" ? paymentIntentId : undefined
     });
 
     await order.save();
+    console.log('Order created successfully:', order._id);
+    
     res.status(201).json({ 
       message: "Order placed successfully", 
-      order: order.toObject() 
+      order: order.toObject(),
+      orderId: order._id
     });
   } catch (error) {
     console.error('Checkout Error:', error);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Server error: " + error.message });
   }
 });
 
-
-
-// Keep all your existing routes below...
-
-  // Get all orders for admin
-  // Get all orders for admin
+// Get all orders for admin
 router.get("/all-orders", async (req, res) => {
   try {
-    // Update populate to include 'images'
     const orders = await Order.find()
-      .populate('items.productId', 'productName images'); // Added 'images'
+      .populate('items.productId', 'productName images')
+      .sort({ createdAt: -1 });
 
     res.status(200).json(orders);
   } catch (error) {
+    console.error('All orders error:', error);
     res.status(500).json({ error: "Server error" });
   }
 });
-    
-  
-  // Update order status (Pending, Confirm, Shipped, Delivered)
-  router.put("/update-status/:id", async (req, res) => {
-    try {
-      const { status } = req.body;
-      const validStatuses = ['Pending', 'Confirm', 'Shipped', 'Delivered'];
-  
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({ error: "Invalid status" });
-      }
-  
-      const order = await Order.findById(req.params.id);
-      if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-      }
-  
-      order.status = status;
-      await order.save();
-      res.status(200).json({ message: "Order status updated", order });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Server error" });
-    }
-  });
 
-  router.get('/user-orders', async (req, res) => {
-    try {
-      // Assuming you want orders for a specific user or type
-      const userId = req.user.id; // Extract from a decoded token or session
-      const orders = await Order.find({ userId }); // Adjust this condition as needed
-      res.json(orders);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Failed to fetch orders.' });
-    }
-  });
-
-  router.get('/count', async (req, res) => {
+// Update order status
+router.put("/update-status/:id", async (req, res) => {
   try {
-    const count = await Order.countDocuments();
-    res.json({ count });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-  
+    const { status } = req.body;
+    const validStatuses = ['Pending', 'Processing', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled', 'CancellationRequested'];
 
-  router.get("/:orderId", async (req, res) => {
-    const { orderId } = req.params;
-    try {
-      const order = await Order.findById(orderId).populate("items.productId", "productName");
-      if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-      }
-      res.status(200).json(order);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Server error" });
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
     }
-  });
 
-  // Add new routes
-  router.put('/request-cancel/:orderId', async (req, res) => {
-    try {
-      const order = await Order.findById(req.params.orderId);
-      if (!order) return res.status(404).json({ error: 'Order not found' });
-      
-      order.status = 'CancellationRequested';
-      await order.save();
-      
-      // Add notification logic here (e.g., send email to admin)
-      console.log("Cancellation requested for order:", order._id);
-      
-      res.json({ message: 'Cancellation requested', order });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Server error' });
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
     }
-  });
 
-  router.delete('/cancel/:orderId', async (req, res) => {
-    try {
-      const order = await Order.findById(req.params.orderId);
-      if (!order) return res.status(404).json({ error: 'Order not found' });
-  
-      // Restore stock
-      await Promise.all(order.items.map(async (item) => {
+    if (status === 'Cancelled') {
+      for (const item of order.items) {
         const product = await Product.findById(item.productId);
         if (product) {
           product.stock += item.quantity;
           await product.save();
         }
-      }));
-  
-      await Order.findByIdAndDelete(req.params.orderId);
-      
-      // Add notification logic here (e.g., send confirmation to user)
-      console.log("Order cancelled:", order._id);
-      
-      res.json({ message: 'Order cancelled and deleted successfully' });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Server error' });
+      }
     }
-  });  
-  
-  // Add this route at the bottom of the file
+
+    order.status = status;
+    await order.save();
+    res.status(200).json({ message: "Order status updated", order });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Get user orders
+router.get('/user-orders/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const orders = await Order.find({ userId })
+      .sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch orders.' });
+  }
+});
+
+// Get guest orders by phone
+router.get('/guest-orders/:phone', async (req, res) => {
+  try {
+    const phone = req.params.phone;
+    const orders = await Order.find({ 
+      phone: phone,
+      userId: { $exists: false } 
+    }).sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch orders.' });
+  }
+});
+
+// Get order count
 router.get('/count', async (req, res) => {
   try {
     const count = await Order.countDocuments();
@@ -282,7 +252,64 @@ router.get('/count', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-  
 
+// Get single order by ID
+router.get("/:orderId", async (req, res) => {
+  const { orderId } = req.params;
+  try {
+    const order = await Order.findById(orderId)
+      .populate("items.productId", "productName images price");
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+    res.status(200).json(order);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Request cancellation
+router.put('/request-cancel/:orderId', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    
+    if (!['Pending', 'Processing', 'Confirmed'].includes(order.status)) {
+      return res.status(400).json({ error: 'Cannot cancel order in current status' });
+    }
+    
+    order.status = 'CancellationRequested';
+    await order.save();
+    
+    res.json({ message: 'Cancellation requested', order });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Cancel and delete order
+router.delete('/cancel/:orderId', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    await Promise.all(order.items.map(async (item) => {
+      const product = await Product.findById(item.productId);
+      if (product) {
+        product.stock += item.quantity;
+        await product.save();
+      }
+    }));
+
+    await Order.findByIdAndDelete(req.params.orderId);
+    
+    res.json({ message: 'Order cancelled and deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 module.exports = router;

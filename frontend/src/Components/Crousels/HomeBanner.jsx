@@ -114,7 +114,7 @@ const HomeBanner = () => {
       {/* Video element */}
       <video
         ref={videoRef}
-        src="/Videos/Jonab.mp4"
+        src="/Videos/Prexo.mp4"
         loop
         muted
         playsInline
@@ -152,7 +152,7 @@ const HomeBanner = () => {
             textShadow: "0 2px 10px rgba(0,0,0,0.4)"
           }}
         >
-          Jonab's
+          PREXO
         </span>
 
         <div
@@ -173,7 +173,7 @@ const HomeBanner = () => {
             textShadow: "0 2px 10px rgba(0,0,0,0.4)"
           }}
         >
-          FASHIONS
+          GADGETS
         </span>
       </div>
 

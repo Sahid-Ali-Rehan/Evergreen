@@ -6,6 +6,8 @@ const { storage } = require('../utils/cloudinary');
 const upload = multer({ storage });
 
 const Product = require('../models/Product');
+const Campaign = require('../models/Campaign');
+
 const router = express.Router();
 
 const jwt = require('jsonwebtoken');
@@ -47,6 +49,33 @@ router.post('/upload', upload.array('images', 5), (req, res) => { // Limit to 5 
     res.status(500).json({ error: 'Upload failed', details: error.message });
   }
 });
+
+
+// Function to get campaign discount for products
+const getCampaignDiscounts = async () => {
+  const now = new Date();
+  const activeCampaigns = await Campaign.find({
+    status: 'running',
+    startTime: { $lte: now },
+    endTime: { $gte: now }
+  });
+
+  const productDiscounts = {};
+  
+  activeCampaigns.forEach(campaign => {
+    campaign.products.forEach(product => {
+      if (product.isActiveInCampaign) {
+        productDiscounts[product.productId.toString()] = {
+          extraDiscount: campaign.extraDiscount,
+          finalPrice: product.finalPrice
+        };
+      }
+    });
+  });
+
+  return productDiscounts;
+};
+
 
 // Update your add product route
 router.post('/add', async (req, res) => {
@@ -191,6 +220,7 @@ router.get('/details/:id', async (req, res) => {
 
 // Fetch all products
 // Adjusted route for pagination and filtering
+// Update the fetch-products route
 router.get('/fetch-products', async (req, res) => {
   const { search, category, subCategory, color, size, sort, page = 1, perPage = 10, productCode } = req.query;
 
@@ -198,7 +228,6 @@ router.get('/fetch-products', async (req, res) => {
 
   if (search) query.productName = { $regex: search, $options: 'i' };
   if (productCode) query.productCode = { $regex: productCode, $options: 'i' };
-
   if (category) query.category = category;
   if (subCategory) query.subCategory = subCategory;
   if (color) query.availableColors = { $in: [color] };
@@ -217,22 +246,90 @@ router.get('/fetch-products', async (req, res) => {
       .skip((page - 1) * perPage)
       .limit(Number(perPage));
 
-    res.status(200).json(products);
+    // Get campaign discounts
+    const campaignDiscounts = await getCampaignDiscounts();
+    
+    // Apply campaign discounts to products
+    const productsWithCampaign = products.map(product => {
+      const productId = product._id.toString();
+      const productObj = product.toObject();
+      
+      if (campaignDiscounts[productId]) {
+        const campaign = campaignDiscounts[productId];
+        const originalPrice = product.price;
+        const originalDiscount = product.discount || 0;
+        const campaignDiscount = campaign.extraDiscount;
+        
+        const totalDiscount = Math.min(100, originalDiscount + campaignDiscount);
+        const finalPrice = campaign.finalPrice || (originalPrice * (1 - totalDiscount / 100));
+        
+        return {
+          ...productObj,
+          campaignDiscount: campaignDiscount,
+          totalDiscount: totalDiscount,
+          finalPrice: Math.round(finalPrice),
+          isInCampaign: true,
+          campaignPrice: Math.round(finalPrice)
+        };
+      }
+      
+      return {
+        ...productObj,
+        isInCampaign: false,
+        finalPrice: product.discount ? 
+          Math.round(product.price * (1 - (product.discount || 0) / 100)) : 
+          product.price
+      };
+    });
+
+    res.status(200).json(productsWithCampaign);
   } catch (error) {
+    console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Error fetching products', error: error.message });
   }
 });
 
-// Route to get a single product by ID
+// Update single product route
 router.get('/single/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    const product = await Product.findById(id); // Assuming you're using MongoDB
+    const product = await Product.findById(id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    res.json(product);
+    
+    // Get campaign discounts
+    const campaignDiscounts = await getCampaignDiscounts();
+    const productId = product._id.toString();
+    const productObj = product.toObject();
+    
+    if (campaignDiscounts[productId]) {
+      const campaign = campaignDiscounts[productId];
+      const originalPrice = product.price;
+      const originalDiscount = product.discount || 0;
+      const campaignDiscount = campaign.extraDiscount;
+      
+      const totalDiscount = Math.min(100, originalDiscount + campaignDiscount);
+      const finalPrice = campaign.finalPrice || (originalPrice * (1 - totalDiscount / 100));
+      
+      return res.json({
+        ...productObj,
+        campaignDiscount: campaignDiscount,
+        totalDiscount: totalDiscount,
+        finalPrice: Math.round(finalPrice),
+        isInCampaign: true,
+        campaignPrice: Math.round(finalPrice)
+      });
+    }
+    
+    res.json({
+      ...productObj,
+      isInCampaign: false,
+      finalPrice: product.discount ? 
+        Math.round(product.price * (1 - (product.discount || 0) / 100)) : 
+        product.price
+    });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching product', error: err.message });
   }

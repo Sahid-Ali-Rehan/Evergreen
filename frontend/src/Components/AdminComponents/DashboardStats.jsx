@@ -260,9 +260,9 @@ const DashboardStats = () => {
         
         // Fetch only needed data to reduce payload
         const [statsResponse, bestSellersResponse, salesByCategoryResponse] = await Promise.all([
-          fetch('https://ruhana-adv.onrender.com/api/dashboard/stats'),
-          fetch('https://ruhana-adv.onrender.com/api/dashboard/best-sellers'),
-          fetch('https://ruhana-adv.onrender.com/api/dashboard/sales-by-category')
+          fetch('http://localhost:5000/api/dashboard/stats'),
+          fetch('http://localhost:5000/api/dashboard/best-sellers'),
+          fetch('http://localhost:5000/api/dashboard/sales-by-category')
         ]);
         
         setStats(await statsResponse.json());
