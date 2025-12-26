@@ -108,7 +108,7 @@ const AllOrders = () => {
 
         // Fetch orders
         const ordersResponse = await axios.get(
-          "http://localhost:5000/api/orders/all-orders",
+          "https://prexo.onrender.com/api/orders/all-orders",
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
@@ -181,7 +181,7 @@ const AllOrders = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:5000/api/orders/update-status/${orderId}`,
+        `https://prexo.onrender.com/api/orders/update-status/${orderId}`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -306,7 +306,7 @@ const AllOrders = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.delete(
-        `http://localhost:5000/api/orders/cancel/${orderId}`,
+        `https://prexo.onrender.com/api/orders/cancel/${orderId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Order cancelled");
@@ -326,7 +326,7 @@ const AllOrders = () => {
       const token = localStorage.getItem("token");
       await Promise.all(selectedOrders.map(orderId => 
         axios.delete(
-          `http://localhost:5000/api/orders/cancel/${orderId}`,
+          `https://prexo.onrender.com/api/orders/cancel/${orderId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
       ));

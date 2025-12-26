@@ -144,7 +144,7 @@ const AddProduct = () => {
     const fetchCategories = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/categories', {
+        const response = await axios.get('https://prexo.onrender.com/api/categories', {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -179,7 +179,7 @@ const AddProduct = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:5000/api/products/upload',
+        'https://prexo.onrender.com/api/products/upload',
         formData,
         {
           headers: {
@@ -222,7 +222,7 @@ const AddProduct = () => {
         
         const token = localStorage.getItem('token');
         const response = await axios.post(
-          'http://localhost:5000/api/products/upload',
+          'https://prexo.onrender.com/api/products/upload',
           formData,
           {
             headers: {
@@ -384,7 +384,7 @@ const AddProduct = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:5000/api/products/add',
+        'https://prexo.onrender.com/api/products/add',
         payload,
         {
           headers: { 
@@ -442,7 +442,7 @@ const AddProduct = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        'http://localhost:5000/api/categories/add',
+        'https://prexo.onrender.com/api/categories/add',
         { key, name: newCategoryName },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -462,7 +462,7 @@ const AddProduct = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/categories/${categoryKey}`, {
+      await axios.delete(`https://prexo.onrender.com/api/categories/${categoryKey}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -506,7 +506,7 @@ const AddProduct = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        `http://localhost:5000/api/categories/${selectedCategory}/subcategories`,
+        `https://prexo.onrender.com/api/categories/${selectedCategory}/subcategories`,
         newSubcategory,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -533,7 +533,7 @@ const AddProduct = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.delete(
-        `http://localhost:5000/api/categories/${categoryKey}/subcategories/${subcategoryIndex}`,
+        `https://prexo.onrender.com/api/categories/${categoryKey}/subcategories/${subcategoryIndex}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       

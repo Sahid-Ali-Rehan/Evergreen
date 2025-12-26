@@ -21,7 +21,7 @@ const AllUsers = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/users/fetch-users', {
+        const res = await axios.get('https://prexo.onrender.com/api/users/fetch-users', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         setUsers(res.data);
@@ -37,11 +37,11 @@ const AllUsers = () => {
 
   const changeRole = async (id) => {
     try {
-      await axios.put(`http://localhost:5000/api/users/role/${id}`, {}, {
+      await axios.put(`https://prexo.onrender.com/api/users/role/${id}`, {}, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
-      const res = await axios.get('http://localhost:5000/api/users/fetch-users', {
+      const res = await axios.get('https://prexo.onrender.com/api/users/fetch-users', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setUsers(res.data);
@@ -56,11 +56,11 @@ const AllUsers = () => {
     if (!isConfirmed) return;
   
     try {
-      await axios.delete(`http://localhost:5000/api/users/${id}`, {
+      await axios.delete(`https://prexo.onrender.com/api/users/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
   
-      const res = await axios.get('http://localhost:5000/api/users/fetch-users', {
+      const res = await axios.get('https://prexo.onrender.com/api/users/fetch-users', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setUsers(res.data);

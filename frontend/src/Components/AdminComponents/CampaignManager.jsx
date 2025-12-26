@@ -85,7 +85,7 @@ const CampaignManager = () => {
   const fetchProducts = async (search = '') => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/campaigns/products/available?search=${search}&page=1&limit=50`, {
+      const response = await axios.get(`https://prexo.onrender.com/api/campaigns/products/available?search=${search}&page=1&limit=50`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProducts(response.data.products || []);
@@ -115,7 +115,7 @@ const CampaignManager = () => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`http://localhost:5000/api/campaigns/create`, formData, {
+      const response = await axios.post(`https://prexo.onrender.com/api/campaigns/create`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -185,7 +185,7 @@ const CampaignManager = () => {
 
       console.log('Creating campaign with:', campaignData);
 
-      const response = await axios.post('http://localhost:5000/api/campaigns/create', campaignData, {
+      const response = await axios.post('https://prexo.onrender.com/api/campaigns/create', campaignData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -206,7 +206,7 @@ const CampaignManager = () => {
   const handleLaunchCampaign = async (campaignId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/campaigns/launch/${campaignId}`, {}, {
+      await axios.put(`https://prexo.onrender.com/api/campaigns/launch/${campaignId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -222,7 +222,7 @@ const CampaignManager = () => {
   const handleStopCampaign = async (campaignId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/campaigns/stop/${campaignId}`, {}, {
+      await axios.put(`https://prexo.onrender.com/api/campaigns/stop/${campaignId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -240,7 +240,7 @@ const CampaignManager = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/campaigns/delete/${campaignId}`, {
+      await axios.delete(`https://prexo.onrender.com/api/campaigns/delete/${campaignId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

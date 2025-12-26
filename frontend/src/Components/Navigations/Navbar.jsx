@@ -137,7 +137,7 @@ const Navbar = () => {
         const userId = decodedToken?.id;
         if (!userId) return;
 
-        const response = await axios.get(`http://localhost:5000/api/users/${userId}`, {
+        const response = await axios.get(`https://prexo.onrender.com/api/users/${userId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

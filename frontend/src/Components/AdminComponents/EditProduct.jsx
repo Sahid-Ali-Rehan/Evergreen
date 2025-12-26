@@ -90,7 +90,7 @@ const EditProduct = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `http://localhost:5000/api/products/details/${productId}`,
+        `https://prexo.onrender.com/api/products/details/${productId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -122,7 +122,7 @@ const EditProduct = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        'http://localhost:5000/api/categories', 
+        'https://prexo.onrender.com/api/categories', 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -148,7 +148,7 @@ const EditProduct = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:5000/api/products/upload',
+        'https://prexo.onrender.com/api/products/upload',
         formData,
         {
           headers: {
@@ -201,7 +201,7 @@ const EditProduct = () => {
         
         const token = localStorage.getItem('token');
         const response = await axios.post(
-          'http://localhost:5000/api/products/upload',
+          'https://prexo.onrender.com/api/products/upload',
           formData,
           {
             headers: {
@@ -281,7 +281,7 @@ const EditProduct = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `http://localhost:5000/api/products/update/${productId}`,
+        `https://prexo.onrender.com/api/products/update/${productId}`,
         payload,
         {
           headers: { 

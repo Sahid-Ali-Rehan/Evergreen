@@ -253,7 +253,7 @@ const CheckoutForm = () => {
 
   const createPaymentIntent = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/orders/create-payment-intent", {
+      const response = await fetch("https://prexo.onrender.com/api/orders/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: totalPrice })
@@ -369,7 +369,7 @@ const CheckoutForm = () => {
         userId: null // Add user ID if you have authentication
       };
     
-      const response = await fetch("http://localhost:5000/api/orders/checkout", {
+      const response = await fetch("https://prexo.onrender.com/api/orders/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(order),

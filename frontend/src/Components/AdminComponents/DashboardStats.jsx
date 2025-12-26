@@ -260,9 +260,9 @@ const DashboardStats = () => {
         
         // Fetch only needed data to reduce payload
         const [statsResponse, bestSellersResponse, salesByCategoryResponse] = await Promise.all([
-          fetch('http://localhost:5000/api/dashboard/stats'),
-          fetch('http://localhost:5000/api/dashboard/best-sellers'),
-          fetch('http://localhost:5000/api/dashboard/sales-by-category')
+          fetch('https://prexo.onrender.com/api/dashboard/stats'),
+          fetch('https://prexo.onrender.com/api/dashboard/best-sellers'),
+          fetch('https://prexo.onrender.com/api/dashboard/sales-by-category')
         ]);
         
         setStats(await statsResponse.json());

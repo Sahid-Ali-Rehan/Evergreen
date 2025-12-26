@@ -90,7 +90,7 @@ const BestSellers = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/products/fetch-products");
+        const response = await fetch("https://prexo.onrender.com/api/products/fetch-products");
         const data = await response.json();
         const bestSellers = data
           .filter(product => product.isBestSeller === true)

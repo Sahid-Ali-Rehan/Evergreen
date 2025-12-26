@@ -57,7 +57,7 @@ const Success = () => {
     const fetchOrderCount = async (retries = 3) => {
       try {
         // FIX: Remove double slash from API endpoint
-        const response = await fetch('http://localhost:5000/api/orders/count');
+        const response = await fetch('https://prexo.onrender.com/api/orders/count');
         if (!response.ok) throw new Error('Failed to fetch order count');
         const data = await response.json();
         setOrderCount(data.count || 0);
@@ -123,7 +123,7 @@ const Success = () => {
     try {
       if (orderCount === null) {
         try {
-          const response = await fetch('http://localhost:5000//api/orders/count');
+          const response = await fetch('https://prexo.onrender.com//api/orders/count');
           if (!response.ok) throw new Error('Failed to fetch order count');
           const data = await response.json();
           const count = data.count || 0;

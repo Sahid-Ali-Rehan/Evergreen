@@ -218,7 +218,7 @@ const AllProductsClient = () => {
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/campaigns/home/active');
+        const response = await axios.get('https://prexo.onrender.com/api/campaigns/home/active');
         if (response.data) {
           setCampaigns(response.data);
           
@@ -297,7 +297,7 @@ const AllProductsClient = () => {
 
         console.log('Fetching products with params:', params);
         
-        const { data } = await axios.get('http://localhost:5000/api/products/fetch-products', { params });
+        const { data } = await axios.get('https://prexo.onrender.com/api/products/fetch-products', { params });
         
         console.log('Products data received:', data);
         

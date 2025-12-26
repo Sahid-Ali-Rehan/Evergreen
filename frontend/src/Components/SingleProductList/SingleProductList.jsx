@@ -73,7 +73,7 @@ const SingleProductList = () => {
   // Function to check if product is in campaign
   const checkProductInCampaign = async (productId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/campaigns/check-product/${productId}`);
+      const response = await fetch(`https://prexo.onrender.com/api/campaigns/check-product/${productId}`);
       if (!response.ok) throw new Error('Failed to check campaign');
       const data = await response.json();
       return data;
@@ -126,7 +126,7 @@ const calculateCampaignPrice = (basePrice, productDiscount, campaignDiscount) =>
     const fetchProduct = async () => {
       try {
         setIsLoading(true);
-        const apiUrl = `http://localhost:5000/api/products/single/${id}`;
+        const apiUrl = `https://prexo.onrender.com/api/products/single/${id}`;
 
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error("Failed to fetch product");
@@ -204,7 +204,7 @@ const calculateCampaignPrice = (basePrice, productDiscount, campaignDiscount) =>
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/reviews/${id}`);
+        const response = await fetch(`https://prexo.onrender.com/api/reviews/${id}`);
         const data = await response.json();
         setReviews(data);
       } catch (error) {
@@ -265,7 +265,7 @@ const calculateCampaignPrice = (basePrice, productDiscount, campaignDiscount) =>
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/reviews/add`, {
+      const response = await fetch(`https://prexo.onrender.com/api/reviews/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...newReview, productId: id }),

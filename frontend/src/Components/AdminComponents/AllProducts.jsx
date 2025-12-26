@@ -26,7 +26,7 @@ const AllProducts = () => {
     const fetchProducts = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/products/fetch-products', {
+        const response = await axios.get('https://prexo.onrender.com/api/products/fetch-products', {
           headers: { Authorization: `Bearer ${token}` },
           params: {
             perPage: 1000,  // Request all products
@@ -73,7 +73,7 @@ const AllProducts = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/products/${id}`, {
+      await axios.delete(`https://prexo.onrender.com/api/products/${id}`, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'

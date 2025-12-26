@@ -124,7 +124,7 @@ const CampaignShowcase = () => {
 
   const fetchCampaigns = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/campaigns/home/active');
+      const response = await fetch('https://prexo.onrender.com/api/campaigns/home/active');
       const data = await response.json();
       setCampaigns(data);
     } catch (error) {
