@@ -89,146 +89,6 @@ router.get('/', isAdmin, async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
-// Add this to your products route (backend)
-router.get('/fetch-products', async (req, res) => {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      sort = '-createdAt',
-      search,
-      category,
-      subCategory,
-      color,
-      size,
-      minPrice,
-      maxPrice,
-      campaign, // New filter parameter
-      campaignName // New: filter by specific campaign name
-    } = req.query;
-
-    let query = {};
-    
-    // Search filter
-    if (search) {
-      query.$or = [
-        { productName: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { productCode: { $regex: search, $options: 'i' } }
-      ];
-    }
-    
-    // Other filters
-    if (category) query.category = category;
-    if (subCategory) query.subCategory = subCategory;
-    if (color) query.availableColors = { $in: [color] };
-    if (size) query.availableSizes = { $elemMatch: { size } };
-    if (minPrice || maxPrice) {
-      query.price = {};
-      if (minPrice) query.price.$gte = Number(minPrice);
-      if (maxPrice) query.price.$lte = Number(maxPrice);
-    }
-
-    const skip = (page - 1) * limit;
-
-    // Get products
-    let products = await Product.find(query)
-      .sort(sort)
-      .skip(skip)
-      .limit(Number(limit));
-
-    // Get active campaigns
-    const now = new Date();
-    const activeCampaigns = await Campaign.find({
-      status: 'active',
-      isLaunched: true,
-      startTime: { $lte: now },
-      endTime: { $gte: now }
-    }).populate('products.productId');
-
-    // Create campaign map for each product
-    const campaignMap = new Map();
-    activeCampaigns.forEach(campaign => {
-      campaign.products.forEach(cp => {
-        if (cp.productId) {
-          const productId = cp.productId._id.toString();
-          if (!campaignMap.has(productId)) {
-            campaignMap.set(productId, []);
-          }
-          campaignMap.get(productId).push({
-              campaignId: campaign._id,
-              campaignName: campaign.name,
-              campaignDiscount: campaign.extraDiscount,
-              campaignEndTime: campaign.endTime,
-              finalPrice: cp.finalPrice || cp.productId.price
-            });
-          }
-      });
-    });
-
-    // Apply campaign filter
-    if (campaign === 'true' || campaign === 'campaign') {
-      products = products.filter(product => 
-        campaignMap.has(product._id.toString())
-      );
-    } else if (campaignName) {
-      products = products.filter(product => {
-        const campaigns = campaignMap.get(product._id.toString());
-        return campaigns && campaigns.some(c => 
-          c.campaignName.toLowerCase().includes(campaignName.toLowerCase())
-        );
-      });
-    }
-
-    // Add campaign data to products
-    const productsWithCampaign = products.map(product => {
-      const productData = product.toObject();
-      const campaigns = campaignMap.get(product._id.toString()) || [];
-      
-      if (campaigns.length > 0) {
-        // Get the first campaign (you might want to handle multiple campaigns differently)
-        const campaign = campaigns[0];
-        productData.inCampaign = true;
-        productData.campaignId = campaign.campaignId;
-        productData.campaignName = campaign.campaignName;
-        productData.campaignDiscount = campaign.campaignDiscount;
-        productData.campaignEndTime = campaign.campaignEndTime;
-        productData.campaignFinalPrice = campaign.finalPrice;
-        
-        // Calculate savings
-        const originalPrice = product.price;
-        const originalDiscount = product.discount || 0;
-        let priceAfterOriginalDiscount = originalPrice;
-        
-        if (originalDiscount > 0) {
-          priceAfterOriginalDiscount = originalPrice - (originalPrice * originalDiscount / 100);
-        }
-        
-        productData.campaignSavings = priceAfterOriginalDiscount - campaign.finalPrice;
-      } else {
-        productData.inCampaign = false;
-      }
-      
-      return productData;
-    });
-
-    const total = await Product.countDocuments(query);
-
-    res.status(200).json({
-      products: productsWithCampaign,
-      total,
-      page: Number(page),
-      pages: Math.ceil(total / limit),
-      hasMore: products.length === limit
-    });
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    res.status(500).json({ 
-      message: 'Error fetching products', 
-      error: error.message 
-    });
-  }
-});
 
 // Get active campaigns for homepage
 router.get('/home/active', async (req, res) => {
@@ -537,6 +397,181 @@ router.get('/products/available', isAdmin, async (req, res) => {
     console.error('Error fetching products:', error);
     res.status(500).json({ 
       message: 'Server error', 
+      error: error.message 
+    });
+  }
+});
+
+// =============== ADD THESE MISSING ROUTES ===============
+
+// UPDATE Campaign (Missing in your code)
+router.put('/:id', isAdmin, async (req, res) => {
+  try {
+    const {
+      name,
+      bannerImage,
+      bannerImages,
+      products,
+      extraDiscount,
+      startTime,
+      endTime,
+      status
+    } = req.body;
+
+    console.log('Updating campaign:', req.params.id);
+
+    // Parse products
+    let productsArray = [];
+    try {
+      productsArray = Array.isArray(products) ? products : JSON.parse(products || '[]');
+    } catch (e) {
+      console.error('Error parsing products:', e);
+      return res.status(400).json({ message: 'Invalid products format' });
+    }
+
+    // Find existing campaign
+    let campaign = await Campaign.findById(req.params.id);
+    
+    if (!campaign) {
+      return res.status(404).json({ message: 'Campaign not found' });
+    }
+
+    // Validate products
+    if (productsArray.length === 0) {
+      return res.status(400).json({ message: 'Please select at least one product' });
+    }
+
+    // Get product details
+    const productDetails = [];
+    for (const productId of productsArray) {
+      const product = await Product.findById(productId);
+      if (!product) {
+        return res.status(404).json({ message: `Product ${productId} not found` });
+      }
+      
+      const originalPrice = product.price;
+      const originalDiscount = product.discount || 0;
+      const campaignDiscount = parseInt(extraDiscount) || 0;
+      const finalPrice = calculateCampaignPrice(originalPrice, originalDiscount, campaignDiscount);
+      
+      productDetails.push({
+        productId,
+        originalPrice,
+        originalDiscount,
+        campaignDiscount,
+        finalPrice,
+        isActiveInCampaign: true
+      });
+    }
+
+    // Handle banner images
+    const validBannerImages = bannerImages?.filter(url => url && url.trim() !== '') || [];
+    let finalBannerImage = bannerImage;
+    
+    if (!finalBannerImage && validBannerImages.length > 0) {
+      finalBannerImage = validBannerImages[0];
+    }
+
+    if (!finalBannerImage) {
+      return res.status(400).json({ message: 'Banner image is required' });
+    }
+
+    // Update campaign
+    campaign.name = name;
+    campaign.bannerImage = finalBannerImage;
+    campaign.bannerImages = validBannerImages;
+    campaign.products = productDetails;
+    campaign.extraDiscount = parseInt(extraDiscount) || 0;
+    campaign.startTime = new Date(startTime);
+    campaign.endTime = new Date(endTime);
+    campaign.status = status || 'draft';
+    campaign.isLaunched = status === 'active';
+
+    await campaign.save();
+    
+    res.status(200).json({ 
+      message: 'Campaign updated successfully', 
+      campaign 
+    });
+    
+  } catch (error) {
+    console.error('Error updating campaign:', error);
+    res.status(500).json({ 
+      message: 'Error updating campaign', 
+      error: error.message 
+    });
+  }
+});
+
+// STOP Campaign (Missing in your code but frontend calls it)
+router.put('/stop/:id', isAdmin, async (req, res) => {
+  try {
+    const campaign = await Campaign.findById(req.params.id);
+    
+    if (!campaign) {
+      return res.status(404).json({ message: 'Campaign not found' });
+    }
+    
+    campaign.status = 'completed';
+    campaign.isLaunched = false;
+    
+    await campaign.save();
+    
+    res.status(200).json({ 
+      message: 'Campaign stopped successfully', 
+      campaign 
+    });
+  } catch (error) {
+    console.error('Error stopping campaign:', error);
+    res.status(500).json({ 
+      message: 'Error stopping campaign', 
+      error: error.message 
+    });
+  }
+});
+
+// DELETE Campaign (MISSING - This is why delete doesn't work!)
+router.delete('/delete/:id', isAdmin, async (req, res) => {
+  try {
+    const campaign = await Campaign.findById(req.params.id);
+    
+    if (!campaign) {
+      return res.status(404).json({ message: 'Campaign not found' });
+    }
+
+    // Delete the campaign
+    await Campaign.findByIdAndDelete(req.params.id);
+    
+    res.status(200).json({ 
+      message: 'Campaign deleted successfully' 
+    });
+    
+  } catch (error) {
+    console.error('Error deleting campaign:', error);
+    res.status(500).json({ 
+      message: 'Error deleting campaign', 
+      error: error.message 
+    });
+  }
+});
+
+// Alternative DELETE route (just in case)
+router.delete('/:id', isAdmin, async (req, res) => {
+  try {
+    const campaign = await Campaign.findByIdAndDelete(req.params.id);
+    
+    if (!campaign) {
+      return res.status(404).json({ message: 'Campaign not found' });
+    }
+    
+    res.status(200).json({ 
+      message: 'Campaign deleted successfully' 
+    });
+    
+  } catch (error) {
+    console.error('Error deleting campaign:', error);
+    res.status(500).json({ 
+      message: 'Error deleting campaign', 
       error: error.message 
     });
   }

@@ -36,10 +36,8 @@ const CampaignCountdown = ({ endTime, compact = false }) => {
   }, [endTime]);
 
   useEffect(() => {
-    // Calculate immediately
     setTimeLeft(calculateTimeLeft());
     
-    // Set up interval for updates
     const intervalId = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
     }, 1000);
@@ -133,43 +131,28 @@ const SkeletonProduct = () => (
   </div>
 );
 
-// Image component with error handling
-const ProductImage = ({ src, alt, className, onLoad, onError }) => {
-  const [imgSrc, setImgSrc] = useState(src);
-  const [loading, setLoading] = useState(true);
+// Debounce hook for search
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
-  const handleLoad = () => {
-    setLoading(false);
-    onLoad && onLoad();
-  };
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
 
-  const handleError = () => {
-    setImgSrc('https://via.placeholder.com/300x300?text=Image+Not+Available');
-    setLoading(false);
-    onError && onError();
-  };
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
 
-  return (
-    <div className={`relative ${className}`}>
-      {loading && (
-        <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
-      )}
-      <img
-        src={imgSrc}
-        alt={alt}
-        className={`w-full h-full object-contain transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
-        onLoad={handleLoad}
-        onError={handleError}
-      />
-    </div>
-  );
+  return debouncedValue;
 };
 
 const AllProductsClient = () => {
   const [products, setProducts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [campaignMap, setCampaignMap] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [wishlist, setWishlist] = useState([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -183,8 +166,8 @@ const AllProductsClient = () => {
     minPrice: 0,
     maxPrice: 10000,
     priceRange: [0, 10000],
-    campaign: '', // 'all', 'campaign', or specific campaign name
-    campaignName: '' // specific campaign name filter
+    campaign: '',
+    campaignName: ''
   });
   const [hoveredProduct, setHoveredProduct] = useState(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -194,11 +177,24 @@ const AllProductsClient = () => {
   const [totalProducts, setTotalProducts] = useState(0);
   const [displayedProducts, setDisplayedProducts] = useState(0);
   const [availableCampaigns, setAvailableCampaigns] = useState([]);
+  const [isFilterLoading, setIsFilterLoading] = useState(false);
+  const [allProductsLoaded, setAllProductsLoaded] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const maxPriceRef = useRef(10000);
+  const containerRef = useRef(null);
+
+  // Debounced search value
+  const debouncedSearch = useDebounce(filters.search, 500);
+
+  // Scroll to top only on initial load
+  useEffect(() => {
+    if (initialLoading) {
+      window.scrollTo(0, 0);
+    }
+  }, [initialLoading]);
 
   // Initialize wishlist
   useEffect(() => {
@@ -214,7 +210,7 @@ const AllProductsClient = () => {
     }
   }, []);
 
-  // Fetch campaigns
+  // Fetch campaigns once on mount
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
@@ -222,11 +218,9 @@ const AllProductsClient = () => {
         if (response.data) {
           setCampaigns(response.data);
           
-          // Extract unique campaign names for filter
           const campaignNames = [...new Set(response.data.map(c => c.name))];
           setAvailableCampaigns(campaignNames);
           
-          // Create campaign map
           const map = {};
           response.data.forEach(campaign => {
             campaign.products.forEach(cp => {
@@ -271,81 +265,55 @@ const AllProductsClient = () => {
     }
   }, [searchParams]);
 
-  // Fetch products
+  // Initial data fetch
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchInitialData = async () => {
       try {
-        if (currentPage === 1) {
-          setLoading(true);
-        } else {
-          setIsLoadingMore(true);
-        }
-
+        setInitialLoading(true);
+        
         const params = {
-          page: currentPage,
-          limit: productsPerPage,
+          page: 1,
+          limit: 50, // Load more initially to reduce subsequent calls
           sort: filters.sort === 'newest' ? '-createdAt' : 
-                filters.sort === 'low-to-high' ? 'price' : '-price',
-          search: filters.search || undefined,
-          category: filters.category || undefined,
-          subCategory: filters.subCategory || undefined,
-          color: filters.color || undefined,
-          size: filters.size || undefined,
-          minPrice: filters.priceRange[0] || undefined,
-          maxPrice: filters.priceRange[1] || undefined
+                filters.sort === 'low-to-high' ? 'price' : '-price'
         };
 
-        console.log('Fetching products with params:', params);
-        
         const { data } = await axios.get('https://prexo.onrender.com/api/products/fetch-products', { params });
-        
-        console.log('Products data received:', data);
         
         let productsData = data.products || data.data || data;
         let totalCount = data.total || data.totalCount || (Array.isArray(data) ? data.length : 0);
         
         // Find max price for price range
-        if (productsData.length > 0) {
-          const prices = productsData.map(p => p.price || 0);
-          const maxPrice = Math.max(...prices, 10000);
-          maxPriceRef.current = maxPrice;
-          
-          if (filters.priceRange[1] > maxPrice) {
-            setFilters(prev => ({
-              ...prev,
-              priceRange: [prev.priceRange[0], maxPrice],
-              maxPrice: maxPrice
-            }));
-          }
-        }
-        
-        // Apply campaign filter if needed
-        let filteredProducts = productsData;
-        if (filters.campaign === 'campaign') {
-          filteredProducts = productsData.filter(product => campaignMap[product._id]);
-          if (filters.campaignName) {
-            filteredProducts = filteredProducts.filter(product => {
-              const campaign = campaignMap[product._id];
-              return campaign && campaign.campaignName === filters.campaignName;
-            });
-          }
-        }
-        
-        if (currentPage === 1) {
-          setProducts(filteredProducts);
-        } else {
-          setProducts(prev => [...prev, ...filteredProducts]);
-        }
-        
+        // Find max price for price range
+if (productsData.length > 0) {
+  let maxPrice = 0;
+  
+  productsData.forEach(product => {
+    // Just use the original price for max calculation
+    const price = product.price || 0;
+    if (price > maxPrice) {
+      maxPrice = price;
+    }
+  });
+  
+  // Always update filters with the max price found
+  setFilters(prev => ({
+    ...prev,
+    priceRange: [0, maxPrice],
+    minPrice: 0,
+    maxPrice: maxPrice
+  }));
+  
+  maxPriceRef.current = maxPrice || 10000;
+}        
+        setProducts(productsData);
         setTotalProducts(totalCount);
-        setDisplayedProducts(currentPage === 1 ? filteredProducts.length : products.length + filteredProducts.length);
-        setHasMoreProducts(productsData.length === productsPerPage);
-        setLoading(false);
-        setIsLoadingMore(false);
+        setDisplayedProducts(productsData.length);
+        setAllProductsLoaded(productsData.length >= totalCount);
+        setInitialLoading(false);
       } catch (error) {
-        console.error('Error fetching products:', error);
-        setLoading(false);
-        setIsLoadingMore(false);
+        console.error('Error fetching initial products:', error);
+        setInitialLoading(false);
         toast.error('Failed to load products. Please try again later.', {
           position: 'bottom-right',
           autoClose: 5000,
@@ -358,8 +326,89 @@ const AllProductsClient = () => {
       }
     };
     
-    fetchProducts();
-  }, [currentPage, filters, campaignMap]);
+    fetchInitialData();
+  }, []);
+
+  // Filter products locally after initial load
+  useEffect(() => {
+    if (!initialLoading && products.length > 0) {
+      setIsFilterLoading(true);
+      
+      // Simulate async filter with timeout to show loading state
+      const timeoutId = setTimeout(() => {
+        let filteredProducts = products;
+        
+        // Apply search filter
+        if (debouncedSearch) {
+          const searchLower = debouncedSearch.toLowerCase();
+          filteredProducts = filteredProducts.filter(product =>
+            product.productName?.toLowerCase().includes(searchLower) ||
+            product.productCode?.toLowerCase().includes(searchLower) ||
+            product.category?.toLowerCase().includes(searchLower) ||
+            product.subCategory?.toLowerCase().includes(searchLower)
+          );
+        }
+        
+        // Apply category filter
+        if (filters.category) {
+          filteredProducts = filteredProducts.filter(product =>
+            product.category?.toLowerCase() === filters.category.toLowerCase()
+          );
+        }
+        
+        // Apply subcategory filter
+        if (filters.subCategory) {
+          filteredProducts = filteredProducts.filter(product =>
+            product.subCategory?.toLowerCase() === filters.subCategory.toLowerCase()
+          );
+        }
+        
+        // Apply price filter
+        filteredProducts = filteredProducts.filter(product => {
+          const price = product.price || 0;
+          return price >= filters.priceRange[0] && price <= filters.priceRange[1];
+        });
+        
+        // Apply campaign filter
+        if (filters.campaign === 'campaign') {
+          filteredProducts = filteredProducts.filter(product => campaignMap[product._id]);
+          if (filters.campaignName) {
+            filteredProducts = filteredProducts.filter(product => {
+              const campaign = campaignMap[product._id];
+              return campaign && campaign.campaignName === filters.campaignName;
+            });
+          }
+        }
+        
+        // Apply sort
+        filteredProducts.sort((a, b) => {
+          const priceA = a.price || 0;
+          const priceB = b.price || 0;
+          
+          switch (filters.sort) {
+            case 'low-to-high':
+              return priceA - priceB;
+            case 'high-to-low':
+              return priceB - priceA;
+            case 'newest':
+            default:
+              return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+          }
+        });
+        
+        // Apply pagination for display only
+        const startIndex = (currentPage - 1) * productsPerPage;
+        const endIndex = startIndex + productsPerPage;
+        const paginatedProducts = filteredProducts.slice(0, endIndex);
+        
+        setDisplayedProducts(filteredProducts.length);
+        setHasMoreProducts(filteredProducts.length > paginatedProducts.length);
+        setIsFilterLoading(false);
+      }, 300); // 300ms delay for smooth UI experience
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [debouncedSearch, filters, campaignMap, initialLoading, products, currentPage, productsPerPage]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -367,7 +416,6 @@ const AllProductsClient = () => {
     setFilters(prev => {
       const newFilters = { ...prev, [name]: value };
       
-      // If selecting a specific campaign, also set campaign filter to 'campaign'
       if (name === 'campaignName' && value) {
         newFilters.campaign = 'campaign';
       }
@@ -376,6 +424,7 @@ const AllProductsClient = () => {
     });
     
     setCurrentPage(1);
+    // Don't scroll to top on filter change
   };
 
   const handlePriceChange = (e, index) => {
@@ -392,7 +441,7 @@ const AllProductsClient = () => {
     setCurrentPage(1);
   };
 
-  // Get unique values for filters
+  // Get unique values for filters from current products
   const getUniqueValues = (field) => {
     const values = products.flatMap(product => 
       Array.isArray(product[field]) ? product[field] : [product[field]]
@@ -400,24 +449,23 @@ const AllProductsClient = () => {
     return [...new Set(values)].filter(val => val !== null && val !== undefined && val !== '');
   };
 
-  const calculateDiscountedPrice = (price, discount, campaignDiscount, campaignFinalPrice) => {
-    if (campaignFinalPrice) {
-      return campaignFinalPrice;
-    }
-    
-    let finalPrice = price;
-    
-    if (discount > 0) {
-      finalPrice = price - (price * (discount / 100));
-    }
-    
-    if (campaignDiscount > 0) {
-      finalPrice = finalPrice - (finalPrice * (campaignDiscount / 100));
-    }
-    
-    return Math.round(finalPrice);
-  };
-
+const calculateDiscountedPrice = (price, discount, campaignDiscount, campaignFinalPrice) => {
+  if (campaignFinalPrice) {
+    return campaignFinalPrice;
+  }
+  
+  let finalPrice = price;
+  
+  if (discount > 0) {
+    finalPrice = price - (price * (discount / 100));
+  }
+  
+  if (campaignDiscount > 0) {
+    finalPrice = finalPrice - (finalPrice * (campaignDiscount / 100));
+  }
+  
+  return Math.round(finalPrice);
+};
   const handleViewDetails = (productId) => {
     navigate(`/products/single/${productId}`);
   };
@@ -443,29 +491,29 @@ const AllProductsClient = () => {
   };
   
   // Reset all filters
-  const resetFilters = () => {
-    setFilters({
-      search: '',
-      category: '',
-      subCategory: '',
-      color: '',
-      size: '',
-      sort: 'newest',
-      minPrice: 0,
-      maxPrice: maxPriceRef.current,
-      priceRange: [0, maxPriceRef.current],
-      campaign: '',
-      campaignName: ''
-    });
-    
-    setCurrentPage(1);
-  };
+const resetFilters = () => {
+  setFilters({
+    search: '',
+    category: '',
+    subCategory: '',
+    color: '',
+    size: '',
+    sort: 'newest',
+    minPrice: 0,
+    maxPrice: maxPriceRef.current, // This will use the updated max price
+    priceRange: [0, maxPriceRef.current],
+    campaign: '',
+    campaignName: ''
+  });
+  
+  setCurrentPage(1);
+};
 
   // Format price
   const formatPrice = (price) => {
-    if (!price) return '৳0';
-    return `৳${price.toLocaleString()}`;
-  };
+  if (!price) return '৳0';
+  return `৳${price.toLocaleString()}`;
+};
 
   // Handle image hover
   const handleMouseEnter = (productId) => {
@@ -478,11 +526,70 @@ const AllProductsClient = () => {
 
   // Load more products
   const loadMoreProducts = () => {
-    setIsLoadingMore(true);
     setCurrentPage(prev => prev + 1);
+    // Don't scroll to top on load more
   };
 
-  if (loading && currentPage === 1) {
+  // Get current displayed products based on filters and pagination
+  const getDisplayedProducts = () => {
+    let filteredProducts = products;
+    
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filteredProducts = filteredProducts.filter(product =>
+        product.productName?.toLowerCase().includes(searchLower) ||
+        product.productCode?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    if (filters.category) {
+      filteredProducts = filteredProducts.filter(product =>
+        product.category?.toLowerCase() === filters.category.toLowerCase()
+      );
+    }
+    
+    if (filters.subCategory) {
+      filteredProducts = filteredProducts.filter(product =>
+        product.subCategory?.toLowerCase() === filters.subCategory.toLowerCase()
+      );
+    }
+    
+    if (filters.campaign === 'campaign') {
+      filteredProducts = filteredProducts.filter(product => campaignMap[product._id]);
+      if (filters.campaignName) {
+        filteredProducts = filteredProducts.filter(product => {
+          const campaign = campaignMap[product._id];
+          return campaign && campaign.campaignName === filters.campaignName;
+        });
+      }
+    }
+    
+    filteredProducts = filteredProducts.filter(product => {
+      const price = product.price || 0;
+      return price >= filters.priceRange[0] && price <= filters.priceRange[1];
+    });
+    
+    filteredProducts.sort((a, b) => {
+      const priceA = a.price || 0;
+      const priceB = b.price || 0;
+      
+      switch (filters.sort) {
+        case 'low-to-high':
+          return priceA - priceB;
+        case 'high-to-low':
+          return priceB - priceA;
+        case 'newest':
+        default:
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      }
+    });
+    
+    const startIndex = 0;
+    const endIndex = currentPage * productsPerPage;
+    return filteredProducts.slice(startIndex, endIndex);
+  };
+
+  if (initialLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-white">
         <Navbar />
@@ -493,6 +600,8 @@ const AllProductsClient = () => {
       </div>
     );
   }
+
+  const displayedProductsList = getDisplayedProducts();
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -715,17 +824,18 @@ const AllProductsClient = () => {
                           className="w-full p-3 border-2 border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent text-sm tracking-wider transition-all duration-300"
                         />
                       </div>
-                      <div>
-                        <label className="block text-xs tracking-widest uppercase mb-2 text-gray-600">MAX PRICE</label>
-                        <input
-                          type="number"
-                          min={filters.priceRange[0]}
-                          max={maxPriceRef.current}
-                          value={filters.priceRange[1]}
-                          onChange={(e) => handlePriceChange(e, 1)}
-                          className="w-full p-3 border-2 border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent text-sm tracking-wider transition-all duration-300"
-                        />
-                      </div>
+                      {/* Max Price Input */}
+<div>
+  <label className="block text-xs tracking-widest uppercase mb-2 text-gray-600">MAX PRICE</label>
+  <input
+    type="number"
+    min={filters.priceRange[0]}
+    max={maxPriceRef.current} // Use the ref here
+    value={filters.priceRange[1]}
+    onChange={(e) => handlePriceChange(e, 1)}
+    className="w-full p-3 border-2 border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent text-sm tracking-wider transition-all duration-300"
+  />
+</div>
                     </div>
                   </div>
                 </div>
@@ -735,12 +845,12 @@ const AllProductsClient = () => {
         </AnimatePresence>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" ref={containerRef}>
           {/* Results Summary */}
           <div className="flex justify-between items-center mb-12 pb-6 border-b-2 border-gray-200">
             <p className="text-sm tracking-widest uppercase text-gray-600">
-              SHOWING <span className="font-bold text-black">{displayedProducts}</span> PRODUCTS
-              {hasMoreProducts && (
+              SHOWING <span className="font-bold text-black">{displayedProductsList.length}</span> PRODUCTS
+              {hasMoreProducts && displayedProductsList.length > 0 && (
                 <button 
                   onClick={loadMoreProducts}
                   className="ml-4 text-sm tracking-widest uppercase text-gray-500 hover:text-black transition-colors"
@@ -820,10 +930,16 @@ const AllProductsClient = () => {
           </AnimatePresence>
           
           {/* Products Grid */}
-          {products.length > 0 ? (
+          {isFilterLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <SkeletonProduct key={index} />
+              ))}
+            </div>
+          ) : displayedProductsList.length > 0 ? (
             <div>
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {products.map((product, index) => {
+                {displayedProductsList.map((product, index) => {
                   const campaignData = campaignMap[product._id];
                   const isInCampaign = !!campaignData;
                   const campaignDiscount = campaignData?.campaignDiscount || 0;
@@ -881,10 +997,11 @@ const AllProductsClient = () => {
                         
                         {/* Product Image */}
                         <div className={`relative overflow-hidden aspect-square ${isInCampaign ? 'bg-gradient-to-br from-gray-50 to-white' : 'bg-white'} flex items-center justify-center`}>
-                          <ProductImage
+                          <img
                             src={imageToShow}
                             alt={product.productName}
                             className="w-full h-full object-contain p-6 transition-all duration-700 group-hover:scale-105"
+                            loading="lazy"
                           />
                           
                           {/* Wishlist Button */}
@@ -927,8 +1044,8 @@ const AllProductsClient = () => {
                             <div className="flex flex-col items-end min-w-[80px]">
                               <div className="flex flex-col items-end">
                                 <p className="font-bold text-lg tracking-wider whitespace-nowrap">
-                                  {formatPrice(discountedPrice)}
-                                </p>
+  {formatPrice(discountedPrice)}
+</p>
                                 {(product.discount > 0 || isInCampaign) && (
                                   <span className="text-xs line-through text-gray-500 whitespace-nowrap">
                                     {formatPrice(product.price)}
@@ -1009,15 +1126,6 @@ const AllProductsClient = () => {
                       </span>
                     )}
                   </button>
-                </div>
-              )}
-
-              {/* Skeleton Loading for More Products */}
-              {isLoadingMore && (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <SkeletonProduct key={index} />
-                  ))}
                 </div>
               )}
             </div>
