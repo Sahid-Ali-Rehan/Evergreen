@@ -20,7 +20,10 @@ import {
   Globe,
   Settings,
   Clock,
-  Smartphone as PhoneIcon
+  Scissors,
+  Droplets,
+  Thermometer,
+  ShieldCheck
 } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -32,61 +35,61 @@ const FeaturedProduct = () => {
   const displayRef = useRef(null);
   const titleRef = useRef(null);
   
-  // High-quality iPhone 17 Pro Max images (Google style)
+  // High-quality premium blazer images
   const productImages = [
-    "https://m-cdn.phonearena.com/images/hub/550-wide-two_1200/iPhone-17-Pro-Max-release-date-price-and-features.jpg", // Hero shot
-    "https://citymagazine.b-cdn.net/wp-content/uploads/2025/09/iPhone-17-Pro-Max-2025-02-1400x788.webp", // Color lineup
-    "https://media.wired.com/photos/68ca3201a98a6eae5b8efa33/master/w_2560%2Cc_limit/Apple%2520iPhone%252017%2520Pro%2520and%2520Pro%2520Max%2520SOURCE%2520Julian%2520Chokkattu(1).jpg", // Titanium design
-    "https://www.apple.com/ph/iphone-17-pro/images/overview/highlights/highlights_design_endframe__flnga0hibmeu_large.jpg", // Camera system
-    "https://photos5.appleinsider.com/gallery/66001-138433-iPhone-17-Pro-on-Wood-Table-xl.jpg" // Detail shot
+    "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=2036&auto=format&fit=crop", // Main shot
+    "https://images.unsplash.com/photo-1593032465171-6a7025c5f120?q=80&w=2070&auto=format&fit=crop", // Detail
+    "https://images.unsplash.com/photo-1621072156002-e2fccdc0b176?q=80&w=2087&auto=format&fit=crop", // Wearing
+    "https://images.unsplash.com/photo-1505022610485-0249ba5b3675?q=80&w=2070&auto=format&fit=crop", // Back
+    "https://images.unsplash.com/photo-1520006403909-838d6b92c22e?q=80&w=2070&auto=format&fit=crop"  // Studio
   ];
   
   const product = {
-    name: "iPhone 17 Pro Max",
-    tagline: "The Next Generation of Innovation",
-    subtitle: "Redefining what's possible.",
-    price: "From ৳1,89,999",
-    color: "Space Black Titanium",
-    status: "Coming Soon",
+    name: "NEXUS PRIME BLAZER",
+    tagline: "The Pinnacle of Menswear Excellence",
+    subtitle: "Redefining luxury tailoring.",
+    price: "From ৳1,49,999",
+    color: "Midnight Obsidian",
+    status: "Limited Edition",
     
     highlightFeatures: [
       {
-        icon: <Cpu className="w-6 h-6" />,
-        title: "A18 Pro Chip",
-        subtitle: "3nm Architecture",
-        description: "The most powerful chip ever in a smartphone",
+        icon: <Scissors className="w-6 h-6" />,
+        title: "Bespoke Tailoring",
+        subtitle: "Handcrafted Perfection",
+        description: "Every stitch meticulously placed by master artisans",
         color: "from-blue-500/20 to-blue-700/10"
       },
       {
-        icon: <Camera className="w-6 h-6" />,
-        title: "Quad Camera System",
-        subtitle: "48MP ProRAW",
-        description: "Professional photography in your pocket",
+        icon: <Droplets className="w-6 h-6" />,
+        title: "Water-Resistant",
+        subtitle: "Nano Technology",
+        description: "Advanced fabric treatment repels water and stains",
         color: "from-purple-500/20 to-purple-700/10"
       },
       {
-        icon: <Battery className="w-6 h-6" />,
-        title: "All-Day Battery",
-        subtitle: "5000mAh Capacity",
-        description: "Up to 32 hours of video playback",
+        icon: <Thermometer className="w-6 h-6" />,
+        title: "Temperature Regulating",
+        subtitle: "All-Season Comfort",
+        description: "Breathable fabric adapts to your body temperature",
         color: "from-emerald-500/20 to-emerald-700/10"
       },
       {
-        icon: <Radio className="w-6 h-6" />,
-        title: "6G Ready",
-        subtitle: "Next-Gen Connectivity",
-        description: "Wi-Fi 7 and satellite communications",
+        icon: <ShieldCheck className="w-6 h-6" />,
+        title: "Lifetime Guarantee",
+        subtitle: "Unmatched Quality",
+        description: "Crafted to last with premium materials and construction",
         color: "from-cyan-500/20 to-cyan-700/10"
       }
     ],
     
     specifications: [
-      { label: "Display", value: "6.9\" ProMotion", detail: "120Hz, Always-On" },
-      { label: "Processor", value: "A18 Pro", detail: "3nm, 6-core GPU" },
-      { label: "Storage", value: "Up to 2TB", detail: "NVMe Technology" },
-      { label: "Camera", value: "48MP Quad", detail: "7x Optical Zoom" },
-      { label: "Battery", value: "5000mAh", detail: "30W Fast Charge" },
-      { label: "Design", value: "Titanium", detail: "Ceramic Shield" }
+      { label: "Fabric", value: "Super 180s Wool", detail: "Italian Merino" },
+      { label: "Tailoring", value: "Full Canvas", detail: "Hand-Sewn" },
+      { label: "Construction", value: "120+ Hours", detail: "Master Craftsmanship" },
+      { label: "Buttons", value: "Mother of Pearl", detail: "Hand-Polished" },
+      { label: "Lining", value: "Bemberg Silk", detail: "Breathable" },
+      { label: "Stitches", value: "8,500+", detail: "Silk Thread" }
     ]
   };
 
@@ -177,7 +180,7 @@ const FeaturedProduct = () => {
             className="inline-flex items-center gap-3 mb-8 px-6 py-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20"
           >
             <Sparkles className="w-4 h-4 text-white" />
-            <span className="text-white text-sm tracking-[0.3em] font-medium">COMING SOON</span>
+            <span className="text-white text-sm tracking-[0.3em] font-medium">LIMITED EDITION</span>
             <Sparkles className="w-4 h-4 text-white" />
           </motion.div>
 
@@ -186,12 +189,12 @@ const FeaturedProduct = () => {
               ref={titleRef}
               className="text-7xl md:text-8xl font-thin tracking-[-0.05em] mb-4 bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent"
             >
-              iPhone 17 Pro Max
+              NEXUS PRIME BLAZER
             </h1>
           </div>
           
           <p className="text-2xl text-white/70 max-w-2xl mx-auto font-light tracking-wide leading-relaxed mb-8">
-            The future of mobile technology, reimagined.
+            The future of luxury menswear, reimagined.
           </p>
           
           {/* Price and color badges */}
@@ -221,7 +224,7 @@ const FeaturedProduct = () => {
                 <motion.img
                   key={activeView}
                   src={productImages[activeView]}
-                  alt={`iPhone 17 Pro Max - View ${activeView + 1}`}
+                  alt={`${product.name} - View ${activeView + 1}`}
                   className="absolute inset-0 w-full h-full object-cover"
                   initial={{ opacity: 0, scale: 1.05 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -273,8 +276,8 @@ const FeaturedProduct = () => {
                 animate={{ rotate: [0, 5, 0, -5, 0] }}
                 transition={{ duration: 8, repeat: Infinity }}
               >
-                <div className="text-white text-xl font-light">Flagship</div>
-                <div className="text-white/40 text-xs">Premium Edition</div>
+                <div className="text-white text-xl font-light">Premium</div>
+                <div className="text-white/40 text-xs">Bespoke Edition</div>
               </motion.div>
             </div>
             
@@ -286,7 +289,7 @@ const FeaturedProduct = () => {
               >
                 <div className="flex items-center gap-2">
                   <Award className="w-5 h-5 text-yellow-400" />
-                  <div className="text-white text-sm font-light">Innovation Award</div>
+                  <div className="text-white text-sm font-light">Master Crafted</div>
                 </div>
               </motion.div>
             </div>
@@ -297,10 +300,10 @@ const FeaturedProduct = () => {
         <div className="features-section mb-32">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-light text-white mb-4 tracking-tight">
-              Revolutionary <span className="text-white/60">Features</span>
+              Exceptional <span className="text-white/60">Features</span>
             </h2>
             <p className="text-white/50 text-lg max-w-2xl mx-auto font-light">
-              Experience groundbreaking technology designed for ultimate performance.
+              Experience groundbreaking craftsmanship designed for ultimate comfort and style.
             </p>
           </div>
           
@@ -406,10 +409,10 @@ const FeaturedProduct = () => {
                   <div className="flex items-center justify-between">
                     <div className="text-left">
                       <div className="text-white text-xl font-light mb-1">
-                        Get Notified
+                        Book Appointment
                       </div>
                       <div className="text-white/60 text-sm">
-                        Be first in line for pre-orders
+                        Personal fitting with our master tailor
                       </div>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
@@ -430,10 +433,10 @@ const FeaturedProduct = () => {
                 <div className="flex items-center justify-between">
                   <div className="text-left">
                     <div className="text-white text-xl font-light mb-1">
-                      Compare Models
+                      Fabric Selection
                     </div>
                     <div className="text-white/60 text-sm">
-                      See how it stacks up
+                      Choose from premium materials
                     </div>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
@@ -460,10 +463,10 @@ const FeaturedProduct = () => {
               </button>
             </Link>
             
-            <Link to="/tech">
+            <Link to="/tailoring">
               <button className="w-full rounded-xl border border-white/20 text-white hover:bg-white/10 transition-all duration-300 p-4 flex items-center justify-center gap-3 group">
                 <Settings className="w-5 h-5 text-white/60 group-hover:text-white transition-colors" />
-                <span className="font-light text-sm">Tech Specs</span>
+                <span className="font-light text-sm">Tailoring Process</span>
               </button>
             </Link>
           </div>
@@ -478,16 +481,16 @@ const FeaturedProduct = () => {
         >
           <div className="inline-flex items-center gap-3 text-white/30 text-xs tracking-[0.3em] uppercase mb-6">
             <div className="w-20 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-            THE FUTURE OF INNOVATION
+            THE PINNACLE OF CRAFTSMANSHIP
             <div className="w-20 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           </div>
           
           <h3 className="text-3xl font-light text-white mb-4 tracking-tight">
-            Experience Perfection
+            Experience Bespoke Excellence
           </h3>
           
           <p className="text-white/40 text-sm max-w-md mx-auto mb-8 font-light tracking-wide">
-            The next generation of mobile technology is here. Reserve your place in history.
+            The next generation of luxury tailoring is here. Reserve your masterpiece.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -500,7 +503,7 @@ const FeaturedProduct = () => {
             
             <Link to="/contact">
               <button className="px-12 py-4 border border-white/20 text-white text-sm font-light rounded-xl hover:bg-white/10 transition-all duration-300">
-                Contact Sales
+                Contact Tailor
               </button>
             </Link>
           </div>
@@ -514,7 +517,7 @@ const FeaturedProduct = () => {
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center"
         >
-          <PhoneIcon className="w-6 h-6 text-white/60" />
+          <Scissors className="w-6 h-6 text-white/60" />
         </motion.div>
       </div>
     </div>

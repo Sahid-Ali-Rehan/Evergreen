@@ -16,66 +16,74 @@ const Navbar = () => {
   const [isDropdownHovered, setIsDropdownHovered] = useState(false);
   const [activeCategory, setActiveCategory] = useState(null);
 
-  // Premium Apple-style categories with beautiful landscape images
+  // Updated categories with katua, panjabi, polo, shirt, tshirts, shoes, accessories
   const categories = {
-    iphone: {
-      label: "IPHONE",
+    katua: {
+      label: "KATUA",
       items: [
-        { name: "IPHONE 15 PRO", link: "/products?category=iphone&subCategory=15-pro", image: "https://adminapi.applegadgetsbd.com/storage/media/large/iPhone-15-Plus-(2)-(6)-5363.jpg", landscape: "https://images.macrumors.com/t/SuHt0iQuSjaO-ExOZzJieONGf_I=/2500x/article-new/2023/09/iPhone-15-Pro-Lineup-Feature.jpg" },
-        { name: "IPHONE 15", link: "/products?category=iphone&subCategory=15", image: "https://adminapi.applegadgetsbd.com/storage/media/large/iPhone-15-Plus-(2)-(6)-5363.jpg", landscape: "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-finish-select-202309-6-1inch?wid=5120&hei=2880&fmt=webp&qlt=70&.v=1692923777972" },
-        { name: "IPHONE 14", link: "/products?category=iphone&subCategory=14", image: "https://adminapi.applegadgetsbd.com/storage/media/large/iPhone-15-Plus-(2)-(6)-5363.jpg", landscape: "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-14-finish-select-202209-6-1inch?wid=5120&hei=2880&fmt=webp&qlt=70&.v=1660676485882" },
-        { name: "IPHONE 13", link: "/products?category=iphone&subCategory=13", image: "https://adminapi.applegadgetsbd.com/storage/media/large/iPhone-15-Plus-(2)-(6)-5363.jpg", landscape: "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-13-finish-select-202207-6-1inch?wid=5120&hei=2880&fmt=webp&qlt=70&.v=1657641864458" },
-        { name: "IPHONE SE", link: "/products?category=iphone&subCategory=se", image: "https://adminapi.applegadgetsbd.com/storage/media/large/iPhone-15-Plus-(2)-(6)-5363.jpg", landscape: "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-se-finish-select-202207-starlight?wid=5120&hei=2880&fmt=webp&qlt=70&.v=1657641867321" },
+        { name: "COTTON KATUA", link: "/products?category=katua&subCategory=cotton", image: "/Images/categories/katua-cotton.jpg", landscape: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?q=80&w=2088&auto=format&fit=crop" },
+        { name: "EMBROIDERED KATUA", link: "/products?category=katua&subCategory=embroidered", image: "/Images/categories/katua-embroidered.jpg", landscape: "/Images/categories/katua-embroidered-landscape.jpg" },
+        { name: "SILK KATUA", link: "/products?category=katua&subCategory=silk", image: "/Images/categories/katua-silk.jpg", landscape: "/Images/categories/katua-silk-landscape.jpg" },
+        { name: "PRINTED KATUA", link: "/products?category=katua&subCategory=printed", image: "/Images/categories/katua-printed.jpg", landscape: "/Images/categories/katua-printed-landscape.jpg" },
+        { name: "HANDLOOM KATUA", link: "/products?category=katua&subCategory=handloom", image: "/Images/categories/katua-handloom.jpg", landscape: "/Images/categories/katua-handloom-landscape.jpg" },
       ]
     },
-    samsung: {
-      label: "SAMSUNG",
+    panjabi: {
+      label: "PANJABI",
       items: [
-        { name: "GALAXY S24 ULTRA", link: "/products?category=samsung&subCategory=s24-ultra", image: "https://images.samsung.com/is/image/samsung/p6pim/in/2401/gallery/in-galaxy-s24-s928-sm-s928bzvcins-thumb-539489855?$650_519_PNG$", landscape: "https://www.sammobile.com/wp-content/uploads/2023/01/galaxy-s23-promo-images-1.jpg" },
-        { name: "GALAXY Z FOLD5", link: "/products?category=samsung&subCategory=z-fold5", image: "https://images.samsung.com/is/image/samsung/p6pim/in/2307/gallery/in-galaxy-z-fold5-f946-sm-f946bzkains-thumb-536782070?$650_519_PNG$", landscape: "https://images.samsung.com/is/image/samsung/p6pim/in/2307/gallery/in-galaxy-z-fold5-f946-sm-f946bzkains-536782070?$2160_1728_PNG$" },
-        { name: "GALAXY Z FLIP5", link: "/products?category=samsung&subCategory=z-flip5", image: "https://images.samsung.com/is/image/samsung/p6pim/in/2307/gallery/in-galaxy-z-flip5-f731-sm-f731blbgins-thumb-536782049?$650_519_PNG$", landscape: "https://images.samsung.com/is/image/samsung/p6pim/in/2307/gallery/in-galaxy-z-flip5-f731-sm-f731blbgins-536782049?$2160_1728_PNG$" },
-        { name: "GALAXY A SERIES", link: "/products?category=samsung&subCategory=a-series", image: "https://images.samsung.com/is/image/samsung/p6pim/in/2401/gallery/in-galaxy-a55-5g-a556-sm-a556ezkhins-thumb-539489865?$650_519_PNG$", landscape: "https://images.samsung.com/is/image/samsung/p6pim/in/2401/gallery/in-galaxy-a55-5g-a556-sm-a556ezkhins-539489865?$2160_1728_PNG$" },
-        { name: "GALAXY TABLETS", link: "/products?category=samsung&subCategory=tablets", image: "https://images.samsung.com/is/image/samsung/p6pim/in/2307/gallery/in-galaxy-tab-s9-fe-x616-sm-x616nzaeinu-thumb-535354095?$650_519_PNG$", landscape: "https://images.samsung.com/is/image/samsung/p6pim/in/2307/gallery/in-galaxy-tab-s9-fe-x616-sm-x616nzaeinu-535354095?$2160_1728_PNG$" },
+        { name: "CASUAL PANJABI", link: "/products?category=panjabi&subCategory=casual", image: "/Images/categories/panjabi-casual.jpg", landscape: "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?q=80&w=2087&auto=format&fit=crop" },
+        { name: "FORMAL PANJABI", link: "/products?category=panjabi&subCategory=formal", image: "/Images/categories/panjabi-formal.jpg", landscape: "/Images/categories/panjabi-formal-landscape.jpg" },
+        { name: "FESTIVAL PANJABI", link: "/products?category=panjabi&subCategory=festival", image: "/Images/categories/panjabi-festival.jpg", landscape: "/Images/categories/panjabi-festival-landscape.jpg" },
+        { name: "EMBROIDERED PANJABI", link: "/products?category=panjabi&subCategory=embroidered", image: "/Images/categories/panjabi-embroidered.jpg", landscape: "/Images/categories/panjabi-embroidered-landscape.jpg" },
+        { name: "JAMDANI PANJABI", link: "/products?category=panjabi&subCategory=jamdani", image: "/Images/categories/panjabi-jamdani.jpg", landscape: "/Images/categories/panjabi-jamdani-landscape.jpg" },
       ]
     },
-    vivo: {
-      label: "VIVO",
+    polo: {
+      label: "POLO",
       items: [
-        { name: "X100 PRO", link: "/products?category=vivo&subCategory=x100-pro", image: "https://www.vivo.com/content/dam/vivo/in/vivo-new-home-page/phones/x100pro/x100-pro-kv.png", landscape: "https://vivonewsroom.b-cdn.net/wp-content/uploads/2024/09/vivo-V40E-Press-Release-Banner.jpg" },
-        { name: "X90 PRO", link: "/products?category=vivo&subCategory=x90-pro", image: "https://www.vivo.com/content/dam/vivo/in/vivo-new-home-page/phones/x90pro/x90-pro-kv.png", landscape: "https://www.vivo.com/content/dam/vivo/in/vivo-new-home-page/phones/x90pro/x90-pro-landscape.jpg" },
-        { name: "V29 SERIES", link: "/products?category=vivo&subCategory=v29-series", image: "https://www.vivo.com/content/dam/vivo/in/vivo-new-home-page/phones/v29/v29-kv.png", landscape: "https://www.vivo.com/content/dam/vivo/in/vivo-new-home-page/phones/v29/v29-landscape.jpg" },
-        { name: "T2 SERIES", link: "/products?category=vivo&subCategory=t2-series", image: "https://www.vivo.com/content/dam/vivo/in/vivo-new-home-page/phones/t2/t2-kv.png", landscape: "https://www.vivo.com/content/dam/vivo/in/vivo-new-home-page/phones/t2/t2-landscape.jpg" },
-        { name: "Y SERIES", link: "/products?category=vivo&subCategory=y-series", image: "https://www.vivo.com/content/dam/vivo/in/vivo-new-home-page/phones/y36/y36-kv.png", landscape: "https://www.vivo.com/content/dam/vivo/in/vivo-new-home-page/phones/y36/y36-landscape.jpg" },
+        { name: "SOLID COLOR POLO", link: "/products?category=polo&subCategory=solid", image: "/Images/categories/polo-solid.jpg", landscape: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=2070&auto=format&fit=crop" },
+        { name: "STRIPED POLO", link: "/products?category=polo&subCategory=striped", image: "/Images/categories/polo-striped.jpg", landscape: "/Images/categories/polo-striped-landscape.jpg" },
+        { name: "LOGO EMBROIDERED POLO", link: "/products?category=polo&subCategory=embroidered", image: "/Images/categories/polo-embroidered.jpg", landscape: "/Images/categories/polo-embroidered-landscape.jpg" },
+        { name: "SLIM FIT POLO", link: "/products?category=polo&subCategory=slim-fit", image: "/Images/categories/polo-slim-fit.jpg", landscape: "/Images/categories/polo-slim-fit-landscape.jpg" },
+        { name: "LONG SLEEVE POLO", link: "/products?category=polo&subCategory=long-sleeve", image: "/Images/categories/polo-long-sleeve.jpg", landscape: "/Images/categories/polo-long-sleeve-landscape.jpg" },
       ]
     },
-    oppo: {
-      label: "OPPO",
+    shirt: {
+      label: "SHIRT",
       items: [
-        { name: "FIND N3", link: "/products?category=oppo&subCategory=find-n3", image: "https://image.oppo.com/content/dam/oppo/in/mkt/homepage/new-products/find-n3/kv/oppo-find-n3-kv-en.png", landscape: "https://image.oppo.com/content/dam/oppo-campaign-site/in/events/store-opening/f21/launch/banner03-pc-v2.jpg.thumb.webp" },
-        { name: "RENO11 PRO", link: "/products?category=oppo&subCategory=reno11-pro", image: "https://image.oppo.com/content/dam/oppo/in/mkt/homepage/new-products/reno11-pro/kv/reno11-pro-kv.png", landscape: "https://image.oppo.com/content/dam/oppo/in/mkt/homepage/new-products/reno11-pro/kv/reno11-pro-landscape.jpg" },
-        { name: "F25 PRO", link: "/products?category=oppo&subCategory=f25-pro", image: "https://image.oppo.com/content/dam/oppo/in/mkt/homepage/new-products/f25-pro/kv/f25-pro-kv.png", landscape: "https://image.oppo.com/content/dam/oppo/in/mkt/homepage/new-products/f25-pro/kv/f25-pro-landscape.jpg" },
-        { name: "A SERIES", link: "/products?category=oppo&subCategory=a-series", image: "https://image.oppo.com/content/dam/oppo/in/mkt/homepage/phones/a18/kv/oppo-a18-kv-en.png", landscape: "https://image.oppo.com/content/dam/oppo/in/mkt/homepage/phones/a18/kv/oppo-a18-landscape.jpg" },
-        { name: "ENCO BUDS", link: "/products?category=oppo&subCategory=earbuds", image: "https://image.oppo.com/content/dam/oppo/in/mkt/homepage/accessories/enco-buds2/kv/oppo-enco-buds2-kv-en.png", landscape: "https://image.oppo.com/content/dam/oppo/in/mkt/homepage/accessories/enco-buds2/kv/oppo-enco-buds2-landscape.jpg" },
+        { name: "FORMAL SHIRT", link: "/products?category=shirt&subCategory=formal", image: "/Images/categories/shirt-formal.jpg", landscape: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop" },
+        { name: "CASUAL SHIRT", link: "/products?category=shirt&subCategory=casual", image: "/Images/categories/shirt-casual.jpg", landscape: "/Images/categories/shirt-casual-landscape.jpg" },
+        { name: "CHECK SHIRT", link: "/products?category=shirt&subCategory=check", image: "/Images/categories/shirt-check.jpg", landscape: "/Images/categories/shirt-check-landscape.jpg" },
+        { name: "DENIM SHIRT", link: "/products?category=shirt&subCategory=denim", image: "/Images/categories/shirt-denim.jpg", landscape: "/Images/categories/shirt-denim-landscape.jpg" },
+        { name: "LINEN SHIRT", link: "/products?category=shirt&subCategory=linen", image: "/Images/categories/shirt-linen.jpg", landscape: "/Images/categories/shirt-linen-landscape.jpg" },
       ]
     },
-    oneplus: {
-      label: "ONEPLUS",
+    tshirts: {
+      label: "T-SHIRTS",
       items: [
-        { name: "ONEPLUS 12", link: "/products?category=oneplus&subCategory=12", image: "https://oasis.opstatics.com/content/dam/oasis/page/oneplus-12/spec-image/OnePlus-12-green.png", landscape: "https://oasis.opstatics.com/content/dam/oasis/page/2021/lemonade/news/oneplus-launches-oneplus-9-series-flagship-smartphones-and-first-ever-oneplus-watch/9%20PRO%20FAMILY.jpg" },
-        { name: "ONEPLUS 12R", link: "/products?category=oneplus&subCategory=12r", image: "https://oasis.opstatics.com/content/dam/oasis/page/oneplus-12r/spec-image/OnePlus-12R-iron-gray.png", landscape: "https://oasis.opstatics.com/content/dam/oasis/page/oneplus-12r/kv/OnePlus-12R-landscape.jpg" },
-        { name: "ONEPLUS OPEN", link: "/products?category=oneplus&subCategory=open", image: "https://oasis.opstatics.com/content/dam/oasis/page/oneplus-open/spec-image/OnePlus-Open-emerald-dusk.png", landscape: "https://oasis.opstatics.com/content/dam/oasis/page/oneplus-open/kv/OnePlus-Open-landscape.jpg" },
-        { name: "NORD CE3", link: "/products?category=oneplus&subCategory=nord-ce3", image: "https://oasis.opstatics.com/content/dam/oasis/page/nord-ce-3/spec-image/Nord-CE-3-aqua.png", landscape: "https://oasis.opstatics.com/content/dam/oasis/page/nord-ce-3/kv/Nord-CE-3-landscape.jpg" },
-        { name: "BUDS PRO 2", link: "/products?category=oneplus&subCategory=buds-pro2", image: "https://oasis.opstatics.com/content/dam/oasis/page/oneplus-buds-pro-2/spec-image/OnePlus-Buds-Pro-2-obsidian-black.png", landscape: "https://oasis.opstatics.com/content/dam/oasis/page/oneplus-buds-pro-2/kv/OnePlus-Buds-Pro-2-landscape.jpg" },
+        { name: "GRAPHIC T-SHIRT", link: "/products?category=tshirts&subCategory=graphic", image: "/Images/categories/tshirt-graphic.jpg", landscape: "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?q=80&w=2069&auto=format&fit=crop" },
+        { name: "PLAIN T-SHIRT", link: "/products?category=tshirts&subCategory=plain", image: "/Images/categories/tshirt-plain.jpg", landscape: "/Images/categories/tshirt-plain-landscape.jpg" },
+        { name: "OVERSIZED T-SHIRT", link: "/products?category=tshirts&subCategory=oversized", image: "/Images/categories/tshirt-oversized.jpg", landscape: "/Images/categories/tshirt-oversized-landscape.jpg" },
+        { name: "V-NECK T-SHIRT", link: "/products?category=tshirts&subCategory=v-neck", image: "/Images/categories/tshirt-v-neck.jpg", landscape: "/Images/categories/tshirt-v-neck-landscape.jpg" },
+        { name: "FULL SLEEVE T-SHIRT", link: "/products?category=tshirts&subCategory=full-sleeve", image: "/Images/categories/tshirt-full-sleeve.jpg", landscape: "/Images/categories/tshirt-full-sleeve-landscape.jpg" },
       ]
     },
-    nothing: {
-      label: "NOTHING",
+    shoes: {
+      label: "SHOES",
       items: [
-        { name: "PHONE (2)", link: "/products?category=nothing&subCategory=phone2", image: "https://akm-img-a-in.tosshub.com/businesstoday/images/story/202503/67c6d78b2b856-nothing-phone-3a-and-phone-3a-pro-043549569-16x9.jpg", landscape: "https://akm-img-a-in.tosshub.com/businesstoday/images/story/202503/67c6d78b2b856-nothing-phone-3a-and-phone-3a-pro-043549569-16x9.jpg" },
-        { name: "PHONE (1)", link: "/products?category=nothing&subCategory=phone1", image: "https://akm-img-a-in.tosshub.com/businesstoday/images/story/202503/67c6d78b2b856-nothing-phone-3a-and-phone-3a-pro-043549569-16x9.jpg", landscape: "https://akm-img-a-in.tosshub.com/businesstoday/images/story/202503/67c6d78b2b856-nothing-phone-3a-and-phone-3a-pro-043549569-16x9.jpg" },
-        { name: "EAR (2)", link: "/products?category=nothing&subCategory=ear2", image: "https://akm-img-a-in.tosshub.com/businesstoday/images/story/202503/67c6d78b2b856-nothing-phone-3a-and-phone-3a-pro-043549569-16x9.jpg", landscape: "https://akm-img-a-in.tosshub.com/businesstoday/images/story/202503/67c6d78b2b856-nothing-phone-3a-and-phone-3a-pro-043549569-16x9.jpg" },
-        { name: "EAR (A)", link: "/products?category=nothing&subCategory=ear-a", image: "https://akm-img-a-in.tosshub.com/businesstoday/images/story/202503/67c6d78b2b856-nothing-phone-3a-and-phone-3a-pro-043549569-16x9.jpg", landscape: "https://akm-img-a-in.tosshub.com/businesstoday/images/story/202503/67c6d78b2b856-nothing-phone-3a-and-phone-3a-pro-043549569-16x9.jpg" },
-        { name: "ACCESSORIES", link: "/products?category=nothing&subCategory=accessories", image: "https://akm-img-a-in.tosshub.com/businesstoday/images/story/202503/67c6d78b2b856-nothing-phone-3a-and-phone-3a-pro-043549569-16x9.jpg", landscape: "https://akm-img-a-in.tosshub.com/businesstoday/images/story/202503/67c6d78b2b856-nothing-phone-3a-and-phone-3a-pro-043549569-16x9.jpg" },
+        { name: "MEN'S SHOES", link: "/products?category=shoes&subCategory=mens", image: "/Images/categories/shoes-mens.jpg", landscape: "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?q=80&w=2069&auto=format&fit=crop" },
+        { name: "WOMEN'S SHOES", link: "/products?category=shoes&subCategory=womens", image: "/Images/categories/shoes-womens.jpg", landscape: "/Images/categories/shoes-womens-landscape.jpg" },
+        { name: "KIDS' SHOES", link: "/products?category=shoes&subCategory=kids", image: "/Images/categories/shoes-kids.jpg", landscape: "/Images/categories/shoes-kids-landscape.jpg" },
+        { name: "SPORTS SHOES", link: "/products?category=shoes&subCategory=sports", image: "/Images/categories/shoes-sports.jpg", landscape: "/Images/categories/shoes-sports-landscape.jpg" },
+      ]
+    },
+    accessories: {
+      label: "ACCESSORIES",
+      items: [
+        { name: "BAGS", link: "/products?category=accessories&subCategory=bags", image: "/Images/categories/accessories-bags.jpg", landscape: "https://cdn.shopify.com/s/files/1/0601/1476/4025/files/linen-shirt_2bad4843-8ebf-48bd-8440-353660501674.jpg?v=1720585304" },
+        { name: "WALLETS", link: "/products?category=accessories&subCategory=wallets", image: "/Images/categories/accessories-wallets.jpg", landscape: "/Images/categories/accessories-wallets-landscape.jpg" },
+        { name: "WATCHES", link: "/products?category=accessories&subCategory=watches", image: "/Images/categories/accessories-watches.jpg", landscape: "/Images/categories/accessories-watches-landscape.jpg" },
+        { name: "SUNGLASSES", link: "/products?category=accessories&subCategory=sunglasses", image: "/Images/categories/accessories-sunglasses.jpg", landscape: "/Images/categories/accessories-sunglasses-landscape.jpg" },
       ]
     },
   };
@@ -526,7 +534,7 @@ const Navbar = () => {
                         onClick={closeAllDropdowns}
                         className="inline-flex items-center text-[15px] font-light text-white/70 hover:text-white transition-all duration-300 group"
                       >
-                        EXPLORE ALL {activeDropdown.toUpperCase()} DEVICES
+                        EXPLORE ALL {activeDropdown.toUpperCase()}
                         <svg 
                           className="ml-4 w-5 h-5 transform group-hover:translate-x-2 transition-all duration-300"
                           viewBox="0 0 20 20" 

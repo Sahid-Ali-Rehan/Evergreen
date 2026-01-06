@@ -16,46 +16,46 @@ const AllCategories = () => {
 
   const categories = [
     { 
-      name: "iPhone", 
-      items: 28, 
-      image: "https://www.apple.com/au/iphone-17-pro/images/overview/highlights/highlights_design_endframe__flnga0hibmeu_large.jpg",
+      name: "Panjabi", 
+      items: 42, 
+      image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?q=80&w=2088&auto=format&fit=crop",
       gradient: "from-blue-500/20 via-purple-500/10 to-transparent",
-      description: "Experience the perfect blend of cutting-edge technology and elegant design"
+      description: "Elegant traditional wear for men with intricate embroidery and premium fabrics"
     },
     { 
-      name: "Samsung", 
-      items: 36, 
-      image: "https://img.bgo.one/news-image/202411080823_samsung-galaxy-s25-ultra-leaks-design-performance_13.jpg",
+      name: "Kurti", 
+      items: 56, 
+      image: "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?q=80&w=2087&auto=format&fit=crop",
       gradient: "from-emerald-500/20 via-blue-500/10 to-transparent",
-      description: "Innovation that pushes boundaries with stunning displays"
+      description: "Stylish and comfortable women's kurtis with modern designs and patterns"
     },
     { 
-      name: "Vivo", 
-      items: 45, 
-      image: "https://i.ytimg.com/vi/NYR1zShh9_Y/maxresdefault.jpg",
+      name: "Men's Fashion", 
+      items: 85, 
+      image: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=2070&auto=format&fit=crop",
       gradient: "from-rose-500/20 via-pink-500/10 to-transparent",
-      description: "Masterful camera technology and sleek modern designs"
+      description: "Contemporary men's clothing including shirts, trousers, and formal wear"
     },
     { 
-      name: "Oppo", 
-      items: 52, 
-      image: "https://arafatelecom.com/wp-content/uploads/2025/05/oppo-a5x.jpg",
+      name: "Ladies' Collection", 
+      items: 72, 
+      image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop",
       gradient: "from-green-500/20 via-emerald-500/10 to-transparent",
-      description: "Fast charging and vibrant displays for the modern user"
+      description: "Exclusive women's ethnic and western wear for every occasion"
     },
     { 
-      name: "OnePlus", 
+      name: "Traditional Wear", 
       items: 64, 
-      image: "https://media.wired.com/photos/65307f72d28937d298777dbf/191:100/w_1280,c_limit/OnePlus-Open-Review-Featured-Gear.jpg?mbid=social_retweet",
+      image: "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?q=80&w=2069&auto=format&fit=crop",
       gradient: "from-red-500/20 via-rose-500/10 to-transparent",
-      description: "Flagship performance at incredible value"
+      description: "Rich heritage clothing including sarees, lehengas, and sherwanis"
     },
     { 
-      name: "Nothing", 
+      name: "Casual Wear", 
       items: 48, 
-      image: "https://www.androidauthority.com/wp-content/uploads/2025/02/Nothing-Phone-3a-and-Phone-3a-Pro-flat-on-a-table.jpg",
+      image: "https://cdn.shopify.com/s/files/1/0601/1476/4025/files/linen-shirt_2bad4843-8ebf-48bd-8440-353660501674.jpg?v=1720585304",
       gradient: "from-gray-400/20 via-white/10 to-transparent",
-      description: "Transparent design and unique glyph interface"
+      description: "Everyday comfortable clothing for men and women with modern styles"
     },
   ];
 
@@ -176,7 +176,7 @@ const AllCategories = () => {
 
           <h1 className="section-title text-7xl md:text-8xl font-light tracking-tight mb-6">
             <span className="text-white">Premium</span>
-            <span className="text-white/40">&nbsp;Devices</span>
+            <span className="text-white/40">&nbsp;Fashion</span>
           </h1>
           
           <motion.div
@@ -187,7 +187,7 @@ const AllCategories = () => {
           />
           
           <p className="text-white/60 text-lg max-w-md mx-auto font-light tracking-wider leading-relaxed">
-            Experience innovation redefined. Each device is a masterpiece of modern technology.
+            Experience elegance redefined. Each garment is a masterpiece of traditional craftsmanship and modern design.
           </p>
         </div>
 
@@ -231,7 +231,7 @@ const AllCategories = () => {
                             {category.name}
                           </h3>
                           <p className="text-white/40 text-sm tracking-wider">
-                            {category.items} exclusive models
+                            {category.items} exclusive items
                           </p>
                         </div>
                       </div>
@@ -260,7 +260,7 @@ const AllCategories = () => {
                       >
                         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/10">
                           <span className="text-xs text-white/60">Click to view all</span>
-                          <span className="text-xs font-medium text-white/80">{category.name} devices</span>
+                          <span className="text-xs font-medium text-white/80">{category.name} collection</span>
                         </div>
                       </motion.div>
                     </div>
@@ -274,7 +274,7 @@ const AllCategories = () => {
                         <motion.img
                           src={category.image}
                           alt={category.name}
-                          className="w-full h-full object-contain scale-95 group-hover:scale-100 transition-transform duration-700"
+                          className="w-full h-full object-cover scale-95 group-hover:scale-100 transition-transform duration-700"
                           animate={{
                             y: activeIndex === index ? [-5, 5, -5] : 0,
                           }}
@@ -341,7 +341,7 @@ const AllCategories = () => {
             onClick={() => navigate('/products')}
             className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/10 rounded-2xl text-white/80 hover:text-white hover:border-white/30 transition-all duration-300 group"
           >
-            <span className="text-lg font-light tracking-widest uppercase">Browse All Products</span>
+            <span className="text-lg font-light tracking-widest uppercase">Browse All Collections</span>
             <ChevronRight className="w-5 h-5 transform group-hover:translate-x-2 transition-transform" />
           </button>
         </motion.div>
@@ -354,7 +354,7 @@ const AllCategories = () => {
           className="text-center mt-20"
         >
           <p className="text-white/30 text-sm tracking-[0.3em] uppercase">
-            Elevate Your Experience
+            Elevate Your Style
           </p>
           <div className="flex items-center justify-center gap-2 mt-4">
             <div className="w-8 h-px bg-gradient-to-r from-transparent to-white/20" />
